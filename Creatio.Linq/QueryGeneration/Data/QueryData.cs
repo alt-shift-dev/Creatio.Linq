@@ -1,6 +1,5 @@
 ﻿using System;
 using Terrasoft.Core;
-using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration.Data
 {

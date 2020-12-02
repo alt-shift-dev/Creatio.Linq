@@ -5,6 +5,10 @@ using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration
 {
+	/// <summary>
+	/// Extends <see cref="EntitySchemaQuery"/> to hold method which projects query result to
+	/// type required in LINQ Select() method.
+	/// </summary>
 	public class EntitySchemaQueryWithProjection: EntitySchemaQuery
 	{
 		private Func<Entity, object> _resultProjector;
@@ -29,11 +33,21 @@ namespace Creatio.Linq.QueryGeneration
 		{
 		}
 
+		/// <summary>
+		/// Sets func which converts <see cref="Entity"/> to result object requested in LINQ Select() method.
+		/// </summary>
 		public void SetResultProjector(Func<Entity, object> resultProjector)
 		{
 			_resultProjector = resultProjector ?? throw new ArgumentNullException(nameof(resultProjector));
 		}
 
+		/// <summary>
+		/// Convert <see cref="Entity"/> to result object requested in LINQ Select() method.
+		/// Use <see cref="SetResultProjector"/> prior to using projections.
+		/// </summary>
+		/// <typeparam name="TResult">Type of result.</typeparam>
+		/// <param name="entity">Source entity.</param>
+		/// <returns>Filled result entity.</returns>
 		public TResult Project<TResult>(Entity entity)
 		{
 			if (null == entity) throw new ArgumentNullException(nameof(entity));

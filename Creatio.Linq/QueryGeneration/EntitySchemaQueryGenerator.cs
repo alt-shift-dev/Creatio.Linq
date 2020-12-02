@@ -13,17 +13,31 @@ using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration
 {
+	/// <summary>
+	/// Generates <see cref="EntitySchemaQuery"/> based on query parts collected by
+	/// expression visitors.
+	/// </summary>
 	internal class EntitySchemaQueryGenerator
 	{
 		private string _schemaName;
 		private QueryPartsAggregator _queryParts;
 
+		/// <summary>
+		/// Initializes new instance of <see cref="EntitySchemaQueryGenerator"/> class.
+		/// </summary>
+		/// <param name="schemaName">Schema name.</param>
+		/// <param name="queryParts">Query parts.</param>
 		public EntitySchemaQueryGenerator(string schemaName, QueryPartsAggregator queryParts)
 		{
 			_schemaName = schemaName ?? throw new ArgumentNullException(nameof(schemaName));
 			_queryParts = queryParts ?? throw new ArgumentNullException(nameof(queryParts));
 		}
 
+		/// <summary>
+		/// Generate ESQ based on collected query data.
+		/// </summary>
+		/// <param name="userConnection"></param>
+		/// <returns>ESQ with projection converter.</returns>
 		public EntitySchemaQueryWithProjection GenerateQuery(UserConnection userConnection)
 		{
 			if(null == userConnection) throw new ArgumentNullException(nameof(userConnection));
@@ -41,7 +55,6 @@ namespace Creatio.Linq.QueryGeneration
 						columns.Add(queryColumnData.ColumnPath, column);
 						queryColumnData.ColumnAlias = column.Name;
 					}
-					
 				}
 			}
 			else
@@ -104,9 +117,12 @@ namespace Creatio.Linq.QueryGeneration
 		/// </summary>
 		private IEntitySchemaQueryFilterItem ConvertFilter(EntitySchemaQuery esq, QueryFilterData filter)
 		{
+			if(null == esq) throw new ArgumentNullException(nameof(esq));
+			if(null == filter) throw new ArgumentNullException(nameof(filter));
+
 			if (filter.Value.GetType().IsArray)
 			{
-				var enumerable = filter.Value as IEnumerable;
+				var enumerable = (IEnumerable)filter.Value;
 				return esq.CreateFilterWithParameters(filter.ComparisonType, filter.ColumnPath,
 					enumerable.Cast<object>());
 			}

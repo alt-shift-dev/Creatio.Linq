@@ -13,8 +13,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 
 		public QueryOrderData(string columnPath, bool descending)
 		{
-			if(string.IsNullOrEmpty(columnPath))
-				throw new ArgumentNullException(nameof(columnPath));
+			if(string.IsNullOrEmpty(columnPath)) throw new ArgumentNullException(nameof(columnPath));
 
 			ColumnPath = columnPath;
 			Descending = descending;

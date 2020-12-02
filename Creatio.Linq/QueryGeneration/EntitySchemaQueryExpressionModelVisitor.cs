@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Linq.Expressions;
 using Creatio.Linq.QueryGeneration.Data;
 using Remotion.Linq;
@@ -8,10 +7,13 @@ using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
 using Terrasoft.Common;
-using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration
 {
+	/// <summary>
+	/// ESQ expression model visitor.
+	/// Called when re-linq enters From(), Select(), OrderBy(), etc clauses.
+	/// </summary>
 	internal class EntitySchemaQueryExpressionModelVisitor: QueryModelVisitorBase
 	{
 		private readonly QueryPartsAggregator _queryParts = new QueryPartsAggregator();

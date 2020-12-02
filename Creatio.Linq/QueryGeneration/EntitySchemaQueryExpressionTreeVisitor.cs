@@ -17,8 +17,13 @@ using MethodCallExpression = System.Linq.Expressions.MethodCallExpression;
 
 namespace Creatio.Linq.QueryGeneration
 {
+	/// <summary>
+	/// ESQ expression tree visitor.
+	/// Called when re-linq enters internal expression tree within From(), Select(), OrderBy(), etc clauses.
+	/// </summary>
 	internal class EntitySchemaQueryExpressionTreeVisitor: ThrowingExpressionVisitor
 	{
+		// maps expression types to esq filter comparison types
 		protected static readonly Dictionary<ExpressionType, FilterComparisonType> ComparisonMappings = 
 			new Dictionary<ExpressionType, FilterComparisonType>
 			{
@@ -30,6 +35,7 @@ namespace Creatio.Linq.QueryGeneration
 				[ExpressionType.LessThanOrEqual] = FilterComparisonType.LessOrEqual,
 			};
 
+		// same for logical operations
 		protected static readonly Dictionary<ExpressionType, LogicalOperationStrict> LogicalOperations = 
 			new Dictionary<ExpressionType, LogicalOperationStrict>
 			{

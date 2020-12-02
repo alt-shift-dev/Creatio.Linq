@@ -2,6 +2,9 @@
 
 namespace Creatio.Linq.QueryGeneration.Data
 {
+	/// <summary>
+	/// Utility class used to reset filter level when exiting using() block.
+	/// </summary>
 	internal class QueryFilterLevelTrigger: IDisposable
 	{
 		private readonly QueryPartsAggregator _aggregator;

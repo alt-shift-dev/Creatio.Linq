@@ -2,6 +2,9 @@
 
 namespace Creatio.Linq.QueryGeneration.Data
 {
+	/// <summary>
+	/// Utility class used to aggregation mode when exiting using() block.
+	/// </summary>
 	internal class QueryModeTrigger: IDisposable
 	{
 		private readonly QueryPartsAggregator _aggregator;

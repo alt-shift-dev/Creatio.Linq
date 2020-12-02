@@ -1,11 +1,13 @@
 ﻿using System;
-using System.Dynamic;
-using System.Runtime.CompilerServices;
 using Terrasoft.Core;
 using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq
 {
+	/// <summary>
+	/// Extends Terrasoft.Core.Entities.Entity to allow defining
+	/// ESQ column expressions in LINQ queries.
+	/// </summary>
 	public class DynamicEntity: Entity
 	{
 		public DynamicEntity(UserConnection userConnection) : base(userConnection)
@@ -31,7 +33,7 @@ namespace Creatio.Linq
 		/// <returns>default(T)</returns>
 		public T Column<T>(string columnPath)
 		{
-			return default;
+			throw new InvalidOperationException("Do not use this method except for defining LINQ queries.");
 		}
 
 		/// <summary>
@@ -42,7 +44,7 @@ namespace Creatio.Linq
 		/// <returns>default(T[])</returns>
 		public T[] AggColumn<T>(string columnPath)
 		{
-			return default;
+			throw new InvalidOperationException("Do not use this method except for defining LINQ queries.");
 		}
 
 		#endregion

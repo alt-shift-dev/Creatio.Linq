@@ -21,17 +21,24 @@ namespace Creatio.Linq
 		private UserConnection _userConnection;
 		private readonly string _schemaName;
 
+		/// <summary>
+		/// Initializes new instance of <see cref="EntitySchemaQueryExecutor"/> class.
+		/// </summary>
+		/// <param name="userConnection">User connection to execute query.</param>
+		/// <param name="schemaName">Core entity schema.</param>
 		public EntitySchemaQueryExecutor(UserConnection userConnection, string schemaName)
 		{
 			_userConnection = userConnection ?? throw new ArgumentNullException(nameof(userConnection));
 			_schemaName = schemaName ?? throw new ArgumentNullException(nameof(schemaName));
 		}
 
+		/// <inheritdoc />
 		public TResult ExecuteScalar<TResult>(QueryModel queryModel)
 		{
 			return ExecuteCollection<TResult>(queryModel).Single();
 		}
 
+		/// <inheritdoc />
 		public TResult ExecuteSingle<TResult>(QueryModel queryModel, bool returnDefaultWhenEmpty)
 		{
 			return returnDefaultWhenEmpty
@@ -39,6 +46,7 @@ namespace Creatio.Linq
 				: ExecuteCollection<TResult>(queryModel).Single();
 		}
 
+		/// <inheritdoc />
 		public IEnumerable<TResult> ExecuteCollection<TResult>(QueryModel queryModel)
 		{
 			var queryData = EntitySchemaQueryExpressionModelVisitor.GenerateEntitySchemaQueryData(queryModel);
@@ -47,8 +55,6 @@ namespace Creatio.Linq
 
 			LogAggregatedQueryParts(queryData.QueryParts);
 
-			//esq.PrimaryQueryColumn.IsAlwaysSelect = true;
-			
 			Trace.WriteLine(esq.GetSelectQuery(_userConnection).GetSqlText());
 
 			var entityCollection = null == esqOptions
@@ -98,6 +104,7 @@ namespace Creatio.Linq
 					}
 				}
 			);
+
 			Trace.WriteLine($"Aggregated query:\r\n{serialized}\r\n");
 		}
 	}
