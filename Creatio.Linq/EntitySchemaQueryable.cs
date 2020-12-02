@@ -1,0 +1,42 @@
+﻿using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Threading;
+using Remotion.Linq;
+using Remotion.Linq.Parsing.Structure;
+using Terrasoft.Core;
+using Terrasoft.Core.Entities;
+
+namespace Creatio.Linq
+{
+	/// <summary>
+	/// Main entry point to LINQ query.
+	/// </summary>
+	public class EntitySchemaQueryable<T>: QueryableBase<T>
+	{
+		public EntitySchemaQueryable(UserConnection userConnection, string schemaName)
+			: base(QueryParser.CreateDefault(), CreateExecutor(userConnection, schemaName))
+		{
+		}
+
+		private static IQueryExecutor CreateExecutor(UserConnection userConnection, string schemaName)
+		{
+			return new EntitySchemaQueryExecutor(userConnection, schemaName);
+		}
+
+		// This constructor is called indirectly by LINQ's query methods, just pass to base.
+		public EntitySchemaQueryable(IQueryParser queryParser, IQueryExecutor executor) : base(queryParser, executor)
+		{
+		}
+
+		// This constructor is called indirectly by LINQ's query methods, just pass to base.
+		public EntitySchemaQueryable(IQueryProvider provider) : base(provider)
+		{
+		}
+
+		// This constructor is called indirectly by LINQ's query methods, just pass to base.
+		public EntitySchemaQueryable(IQueryProvider provider, Expression expression) : base(provider, expression)
+		{
+		}
+	}
+}
