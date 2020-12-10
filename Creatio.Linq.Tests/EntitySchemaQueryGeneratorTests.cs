@@ -1,10 +1,14 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using Creatio.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using Norbit.TRS;
+using Remotion.Linq.Parsing.Structure;
 using Terrasoft.Common;
 using Terrasoft.Core;
+using Terrasoft.Core.DB;
 using Terrasoft.Core.Entities;
 using Xunit;
 using Xunit.Abstractions;
@@ -114,6 +118,53 @@ namespace Creatio.Linq.Tests
 			Assert.IsNotNull(contacts);
 			Assert.AreEqual(1, contacts.Length);
 			Assert.AreEqual("Supervisor", contacts[0].Name);
+		}
+
+		[TestMethod]
+		public void ShouldApplyGrouping()
+		{
+			var contacts = UserConnection
+				.QuerySchema("Contact")
+				.GroupBy(item => new
+				{
+					CreatedBy = item.Column<Guid>("CreatedBy"), 
+					SysAdminUnitTypeValue = item.Column<int>("[SysAdminUnit:ContactId:Id].SysAdminUnitTypeValue")
+				})
+				.Select(group => new
+				{
+					CreatedBy = group.Key.CreatedBy,
+					SysAdminUnitTypeValue = group.Key.SysAdminUnitTypeValue,
+					Count = group.Min(item => item.Column<DateTime>("CreatedOn"))
+				})
+				.ToArray();
+		}
+
+		[TestMethod]
+		public void ShouldApplyAggregation()
+		{
+			var contacts = UserConnection
+				.QuerySchema("Contact")
+				.GroupBy(item => new object[] {
+					item.Column<Guid>("CreatedBy"),
+					item.Column<int>("[SysAdminUnit:ContactId:Id].SysAdminUnitTypeValue")
+				})
+				.Select(group => new
+				{
+					CreatedBy = group.Key[0],
+					SysAdminUnitTypeValue = group.Key[1],
+					Count = group.Min(item => item.Column<DateTime>("CreatedOn"))
+				})
+				.ToArray();
+		}
+
+		[TestMethod]
+		public void TestParameterAndConst()
+		{
+			new Update(UserConnection, "Contact")
+				.Set("FirstName", Column.Parameter("Don't mind"))
+				.Set("LastName", Column.Const("Isn't it nice?"))
+				.Where("Id").IsEqual(Column.Const(Guid.Empty))
+				.Execute(UserConnection.EnsureDBConnection());
 		}
 	}
 }

@@ -1,13 +1,13 @@
 ﻿using System;
-using System.Resources;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
 
-namespace Creatio.Linq.QueryGeneration.Data
+namespace Creatio.Linq.QueryGeneration.Data.Fragments
 {
 	/// <summary>
 	/// Represents query result column.
 	/// </summary>
-	public class QuerySelectColumnData
+	[DebuggerDisplay("{ColumnPath} ({ColumnType})")]
+	internal class QuerySelectColumnData
 	{
 		/// <summary>
 		/// Column path.
@@ -17,7 +17,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Column alias in ESQ.
 		/// </summary>
-		public string ColumnAlias { get; set; }
+		public string Name { get; set; }
 
 		/// <summary>
 		/// Column type.
@@ -28,7 +28,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 		public QuerySelectColumnData(string columnPath, Type columnType)
 		{
 			if (string.IsNullOrEmpty(columnPath)) throw new ArgumentNullException(nameof(columnPath));
-			if (null == columnType) throw new ArgumentNullException(nameof(columnType));
+			//if (null == columnType) throw new ArgumentNullException(nameof(columnType));
 
 			ColumnPath = columnPath;
 			ColumnType = columnType;

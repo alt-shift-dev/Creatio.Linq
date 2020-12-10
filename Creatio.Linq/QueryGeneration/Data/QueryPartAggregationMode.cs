@@ -29,5 +29,10 @@
 		/// Currently in GroupBy clause.
 		/// </summary>
 		GroupBy,
+
+		/// <summary>
+		/// Currently in Count/Sum/Min/Max/Avg clause.
+		/// </summary>
+		Aggregate,
 	}
 }

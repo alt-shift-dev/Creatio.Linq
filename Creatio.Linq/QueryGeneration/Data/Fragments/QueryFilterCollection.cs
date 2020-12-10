@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using Terrasoft.Common;
 
-namespace Creatio.Linq.QueryGeneration.Data
+namespace Creatio.Linq.QueryGeneration.Data.Fragments
 {
 	/// <summary>
 	/// Defines collection of query filters.
@@ -89,7 +88,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 		}
 
 		/// <summary>
-		/// Unites current filter collection with parent and return parent.
+		/// Unites current filter collection with parent and returns parent.
 		/// </summary>
 		public QueryFilterCollection TryUniteWithParent()
 		{

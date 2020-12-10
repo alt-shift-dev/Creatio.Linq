@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using Terrasoft.Core.Entities;
 
-namespace Creatio.Linq.QueryGeneration.Data
+namespace Creatio.Linq.QueryGeneration.Data.Fragments
 {
 	/// <summary>
 	/// Parameters of single ESQ filter.
@@ -25,6 +25,9 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// </summary>
 		public FilterComparisonType ComparisonType { get; set; } = FilterComparisonType.Equal;
 
+		/// <summary>
+		/// Initializes new instance of <see cref="QueryFilterData"/>.
+		/// </summary>
 		public QueryFilterData()
 		{
 		}

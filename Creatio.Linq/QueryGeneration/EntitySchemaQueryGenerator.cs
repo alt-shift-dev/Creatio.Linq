@@ -7,6 +7,7 @@ using System.Net.Http.Headers;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using Creatio.Linq.QueryGeneration.Data;
+using Creatio.Linq.QueryGeneration.Data.Fragments;
 using Terrasoft.Common;
 using Terrasoft.Core;
 using Terrasoft.Core.Entities;
@@ -53,7 +54,7 @@ namespace Creatio.Linq.QueryGeneration
 					{
 						var column = esq.AddColumn(queryColumnData.ColumnPath);
 						columns.Add(queryColumnData.ColumnPath, column);
-						queryColumnData.ColumnAlias = column.Name;
+						queryColumnData.Name = column.Name;
 					}
 				}
 			}
@@ -143,7 +144,7 @@ namespace Creatio.Linq.QueryGeneration
 			return entity =>
 			{
 				var ctorParams = selectColumns
-					.Select(column => entity.GetColumnValue(column.ColumnAlias))
+					.Select(column => entity.GetColumnValue(column.Name))
 					.ToArray();
 
 				return projectionConstructor.Invoke(ctorParams);

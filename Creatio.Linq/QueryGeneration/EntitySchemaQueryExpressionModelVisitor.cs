@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq.Expressions;
 using Creatio.Linq.QueryGeneration.Data;
+using Creatio.Linq.QueryGeneration.Data.States;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
@@ -16,7 +18,8 @@ namespace Creatio.Linq.QueryGeneration
 	/// </summary>
 	internal class EntitySchemaQueryExpressionModelVisitor: QueryModelVisitorBase
 	{
-		private readonly QueryPartsAggregator _queryParts = new QueryPartsAggregator();
+		private readonly QueryPartsAggregator _aggregator;
+		private readonly QueryCollectorState _state;
 
 		public static QueryData GenerateEntitySchemaQueryData(QueryModel queryModel)
 		{
@@ -25,9 +28,22 @@ namespace Creatio.Linq.QueryGeneration
 			return visitor.GetEntitySchemaQueryData();
 		}
 
+		public EntitySchemaQueryExpressionModelVisitor()
+		{
+			_aggregator = new QueryPartsAggregator();
+			_state = new QueryCollectorState(_aggregator);
+		}
+
 		public QueryData GetEntitySchemaQueryData()
 		{
-			return new QueryData(_queryParts);
+			_state.Dispose();
+			return new QueryData(_aggregator);
+		}
+
+		protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
+		{
+			Trace.WriteLine($"VisitBodyClauses");
+			base.VisitBodyClauses(bodyClauses, queryModel);
 		}
 
 		public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
@@ -37,14 +53,14 @@ namespace Creatio.Linq.QueryGeneration
 			// First()
 			if (resultOperator is FirstResultOperator)
 			{
-				_queryParts.Take = 1;
+				_aggregator.Take = 1;
 				return;
 			}
 
 			// Count()
 			if (resultOperator is CountResultOperator || resultOperator is LongCountResultOperator)
 			{
-				_queryParts.ReturnCount = true;
+				_aggregator.ReturnCount = true;
 			}
 
 			// Take()
@@ -54,7 +70,7 @@ namespace Creatio.Linq.QueryGeneration
 
 				if (exp.NodeType == ExpressionType.Constant)
 				{
-					_queryParts.Take = (int) ((ConstantExpression) exp).Value;
+					_aggregator.Take = (int) ((ConstantExpression) exp).Value;
 				}
 				else
 				{
@@ -69,11 +85,33 @@ namespace Creatio.Linq.QueryGeneration
 
 				if (exp.NodeType == ExpressionType.Constant)
 				{
-					_queryParts.Skip = (int) ((ConstantExpression) exp).Value;
+					_aggregator.Skip = (int) ((ConstantExpression) exp).Value;
 				}
 				else
 				{
 					throw new NotSupportedException("Currently not supporting methods or variables in the Skip or Take clause.");
+				}
+			}
+
+			// GroupBy()
+			if (resultOperator is GroupResultOperator groupResult)
+			{
+				using (_state.PushAggregationMode(QueryPartAggregationMode.GroupBy))
+				{
+					var key = groupResult.KeySelector;
+					var elementSelector = groupResult.ElementSelector;
+
+					UpdateEntitySchemaQueryExpression(key);
+					UpdateEntitySchemaQueryExpression(elementSelector);
+
+					if (key is NewExpression newKeySelector)
+					{
+						int position = 0;
+						foreach (var memberInfo in newKeySelector.Members)
+						{
+							_state.SetColumnAlias(position++, memberInfo.Name);
+						}
+					}
 				}
 			}
 		}
@@ -81,6 +119,7 @@ namespace Creatio.Linq.QueryGeneration
 		public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
 		{
 			Trace.WriteLine($"VisitMainFromClause: {fromClause}");
+
 			base.VisitMainFromClause(fromClause, queryModel);
 
 			var subQueryExpression = fromClause.FromExpression as SubQueryExpression;
@@ -95,9 +134,10 @@ namespace Creatio.Linq.QueryGeneration
 
 		public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
 		{
-			using (_queryParts.PushAggregationMode(QueryPartAggregationMode.Select))
+			Trace.WriteLine($"VisitSelectClause: {selectClause}");
+
+			using (_state.PushAggregationMode(QueryPartAggregationMode.Select))
 			{
-				Trace.WriteLine($"VisitSelectClause: {selectClause}");
 
 				UpdateEntitySchemaQueryExpression(selectClause.Selector);
 
@@ -107,13 +147,12 @@ namespace Creatio.Linq.QueryGeneration
 
 		public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
 		{
-			using (_queryParts.PushAggregationMode(QueryPartAggregationMode.Where))
-			{
-				using (_queryParts.PushFilter())
-				{
-					_queryParts.SetFilterLogicalOperation(LogicalOperationStrict.And);
+			Trace.WriteLine($"VisitWhereClause: {whereClause}");
 
-					Trace.WriteLine($"VisitWhereClause: {whereClause}");
+			using (_state.PushAggregationMode(QueryPartAggregationMode.Where))
+			{
+				using (_state.PushFilter(LogicalOperationStrict.And))
+				{
 					UpdateEntitySchemaQueryExpression(whereClause.Predicate);
 				}
 
@@ -123,13 +162,13 @@ namespace Creatio.Linq.QueryGeneration
 
 		public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
 		{
-			using (_queryParts.PushAggregationMode(QueryPartAggregationMode.OrderBy))
-			{
-				Trace.WriteLine($"VisitOrderByClause: {orderByClause}");
+			Trace.WriteLine($"VisitOrderByClause: {orderByClause}");
 
+			using (_state.PushAggregationMode(QueryPartAggregationMode.OrderBy))
+			{
 				foreach (var ordering in orderByClause.Orderings)
 				{
-					_queryParts.SetSortOrder(ordering.OrderingDirection == OrderingDirection.Desc);
+					_state.SetSortOrder(ordering.OrderingDirection == OrderingDirection.Desc);
 					UpdateEntitySchemaQueryExpression(ordering.Expression);
 				}
 
@@ -140,12 +179,7 @@ namespace Creatio.Linq.QueryGeneration
 
 		public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitJoinClause: {joinClause.InnerKeySelector}, {joinClause.OuterKeySelector}");
-
-			UpdateEntitySchemaQueryExpression(joinClause.InnerKeySelector);
-			UpdateEntitySchemaQueryExpression(joinClause.OuterKeySelector);
-			throw new NotImplementedException("VisitJoinClause");
-			base.VisitJoinClause(joinClause, queryModel, index);
+			throw new InvalidOperationException($"EntitySchemaQuery LINQ provider does not support join operator. Use ESQ column path expressions instead.");
 		}
 
 		public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
@@ -159,12 +193,12 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitGroupJoinClause: {groupJoinClause}");
 			throw new NotSupportedException("VisitGroupJoinClause");
-			base.VisitGroupJoinClause(groupJoinClause, queryModel, index);
 		}
+
 
 		private void UpdateEntitySchemaQueryExpression(Expression expression)
 		{
-			EntitySchemaQueryExpressionTreeVisitor.SetupQueryParts(expression, _queryParts);
+			EntitySchemaQueryExpressionTreeVisitor.SetupQueryParts(expression, _state);
 		}
 	}
 }

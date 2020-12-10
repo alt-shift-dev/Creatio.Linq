@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
-using System.Runtime.Serialization;
-using System.Text;
-using Creatio.Linq.QueryGeneration.Data;
+using Creatio.Linq.QueryGeneration.Data.States;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
@@ -45,19 +42,18 @@ namespace Creatio.Linq.QueryGeneration
 				[ExpressionType.OrElse] = LogicalOperationStrict.Or,
 			};
 
-
-		private QueryPartsAggregator _aggregator;
+		private QueryCollectorState _state;
 		private Stack<object> _arguments = new Stack<object>();
 
-		public static void SetupQueryParts(Expression linqExpression, QueryPartsAggregator aggregator)
+		public static void SetupQueryParts(Expression linqExpression, QueryCollectorState state)
 		{
-			var visitor = new EntitySchemaQueryExpressionTreeVisitor(aggregator);
+			var visitor = new EntitySchemaQueryExpressionTreeVisitor(state);
 			visitor.Visit(linqExpression);
 		}
 
-		public EntitySchemaQueryExpressionTreeVisitor(QueryPartsAggregator aggregator)
+		public EntitySchemaQueryExpressionTreeVisitor(QueryCollectorState state)
 		{
-			_aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
+			_state = state ?? throw new ArgumentNullException(nameof(state));
 		}
 
 		protected override Expression VisitBinary(BinaryExpression expression)
@@ -71,14 +67,12 @@ namespace Creatio.Linq.QueryGeneration
 		private void ConvertBinaryExpression(BinaryExpression expression)
 		{
 			Trace.WriteLine($"ConvertBinary: [{expression.Left}], operation {expression.NodeType}, [{expression.Right}]");
-			//var isRightConstant = expression.Right is ConstantExpression;
-
 
 			if (ComparisonMappings.TryGetValue(expression.NodeType, out var comparisonType))
 			{
 				var leftOperand = Evaluate(expression.Left);
 				var rightOperand = Evaluate(expression.Right);
-				var column = _aggregator.LastFilterColumn;
+				var column = _state.LastColumn;
 
 				// Where(item => item == 123) should work same way as Where(item => 123 == item)
 				var value = column == leftOperand.ToString()
@@ -105,20 +99,17 @@ namespace Creatio.Linq.QueryGeneration
 					comparisonType = nullComparisonType;
 				}
 
+				_state.SetComparison(comparisonType, value);
 
-				_aggregator.AddFilter(new QueryFilterData(column, value, comparisonType));
 				Trace.WriteLine($"Assuming comparison: {leftOperand} {comparisonType} {rightOperand}");
 			}
 
 			if (LogicalOperations.TryGetValue(expression.NodeType, out var logicalOperation))
 			{
-				using (_aggregator.PushFilter())
+				using (_state.PushFilter(logicalOperation))
 				{
-					_aggregator.SetFilterLogicalOperation(logicalOperation);
-
 					VisitLogicalOperandExpression(expression.Left);
 					VisitLogicalOperandExpression(expression.Right);
-
 				}
 
 				Trace.WriteLine($"Assuming logical operation: {logicalOperation}");
@@ -142,11 +133,7 @@ namespace Creatio.Linq.QueryGeneration
 
 				var memberName = expression.Member.Name;
 
-				var dataMemberAttr = expression.Member.GetCustomAttribute<DataMemberAttribute>();
-				if (null != dataMemberAttr)
-				{
-					memberName = dataMemberAttr.Name;
-				}
+				_state.SetColumn(memberName, null);
 
 				Trace.WriteLine($"Requested member: {memberName}");
 			}
@@ -167,7 +154,7 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitNew: {expression}");
 
-			_aggregator.SetResultConstructor(expression.Constructor);
+			_state.SetResultConstructor(expression.Constructor);
 			// for new { c.Name, c.Title, c.Title.Length }
 
 			// expression.Members has all the property names of the anonymous type
@@ -178,8 +165,11 @@ namespace Creatio.Linq.QueryGeneration
 
 			foreach (var arg in expression.Arguments)
 			{
-				Trace.WriteLine($"Select new argument: {arg}");
-				Visit(arg);
+				using (_state.PushResultElement())
+				{
+					Trace.WriteLine($"Select new argument: {arg}");
+					Visit(arg);
+				}
 			}
 
 
@@ -190,7 +180,6 @@ namespace Creatio.Linq.QueryGeneration
 		protected override Expression VisitMethodCall(MethodCallExpression expression)
 		{
 			Trace.WriteLine($"VisitMethodCall: {expression}, method {expression.Method.Name}, args: {string.Join(", ",expression.Arguments.Select(a => a.ToString()))}");
-			// In production code, handle this via method lookup tables.
 
 			var method = expression.Method;
 
@@ -199,8 +188,9 @@ namespace Creatio.Linq.QueryGeneration
 				var obj = Evaluate(expression.Object);
 				var pattern = Evaluate(expression.Arguments[0]);
 
-				_aggregator.AddFilter(new QueryFilterData(obj.ToString(), pattern, FilterComparisonType.Contain));
-				Trace.WriteLine($"{obj} LIKE '%{pattern}%'");
+				_state.SetColumn(obj.ToString(), typeof(string));
+				_state.SetComparison(FilterComparisonType.Contain, pattern);
+				Trace.WriteLine($"{_state.LastColumn} LIKE '%{pattern}%'");
 
 				return expression;
 			}
@@ -210,8 +200,10 @@ namespace Creatio.Linq.QueryGeneration
 				var obj = Evaluate(expression.Object);
 				var pattern = Evaluate(expression.Arguments[0]);
 
-				_aggregator.AddFilter(new QueryFilterData(obj.ToString(), pattern, FilterComparisonType.StartWith));
-				Trace.WriteLine($"{obj} LIKE '{pattern}%");
+				_state.SetColumn(obj.ToString(), typeof(string));
+				_state.SetComparison(FilterComparisonType.StartWith, pattern);
+
+				Trace.WriteLine($"{_state.LastColumn} LIKE '{pattern}%");
 
 				return expression;
 			}
@@ -221,7 +213,9 @@ namespace Creatio.Linq.QueryGeneration
 				var obj = Evaluate(expression.Object);
 				var pattern = Evaluate(expression.Arguments[0]);
 
-				_aggregator.AddFilter(new QueryFilterData(obj.ToString(), pattern, FilterComparisonType.EndWith));
+				_state.SetColumn(obj.ToString(), typeof(string));
+				_state.SetComparison(FilterComparisonType.EndWith, pattern);
+
 				Trace.WriteLine($"{obj} LIKE '%{pattern}'");
 
 				return expression;
@@ -233,7 +227,7 @@ namespace Creatio.Linq.QueryGeneration
 				Trace.WriteLine($"[column] -> {columnName}");
 
 				_arguments.Push(columnName);
-				_aggregator.SetColumn(columnName, expression.Type);
+				_state.SetColumn(columnName, expression.Type);
 
 				return expression;
 			}
@@ -247,13 +241,12 @@ namespace Creatio.Linq.QueryGeneration
 
 			if (expression.NodeType == ExpressionType.Not)
 			{
-				_aggregator.SetNegative();
+				_state.SetNegative();
 			}
 
 			Visit(expression.Operand);
 
 			return expression;
-			//return base.VisitUnary(expression);
 		}
 
 		protected override Expression VisitQuerySourceReference(QuerySourceReferenceExpression expression)
@@ -266,16 +259,20 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitSubQuery: {expression}");
 			Visit(expression.QueryModel.MainFromClause.FromExpression);
+
 			foreach (var resultOperator in expression.QueryModel.ResultOperators)
 			{
 				VisitResultOperator(resultOperator);
 			}
+
 			Visit(expression.QueryModel.SelectClause.Selector);
 			return expression;
 		}
 
 		private void VisitResultOperator(ResultOperatorBase resultOperator)
 		{
+			Trace.WriteLine($"VisitResultOperator: {resultOperator}");
+
 			if (resultOperator is ContainsResultOperator containsResult)
 			{
 				Visit(containsResult.Item);
@@ -283,8 +280,20 @@ namespace Creatio.Linq.QueryGeneration
 				var columnPath = (string)_arguments.Pop();
 				var value = _arguments.Pop();
 
-				_aggregator.AddFilter(new QueryFilterData(columnPath, value, FilterComparisonType.Equal));
+				_state.SetColumn(columnPath, typeof(string));
+				_state.SetComparison(FilterComparisonType.Equal, value);
 			}
+		}
+
+		protected override Expression VisitNewArray(NewArrayExpression expression)
+		{
+			Trace.WriteLine($"VisitNewArray: {expression}");
+			foreach (var nestedExpression in expression.Expressions)
+			{
+				Visit(nestedExpression);
+			}
+
+			return expression;
 		}
 
 		protected override Expression VisitExtension(Expression expression)
@@ -292,6 +301,7 @@ namespace Creatio.Linq.QueryGeneration
 			Trace.WriteLine($"VisitExtension: {expression}");
 			return expression;
 		}
+
 
 		// Called when a LINQ expression type is not handled above.
 		protected override Exception CreateUnhandledItemException<T>(T unhandledItem, string visitMethod)
@@ -316,9 +326,12 @@ namespace Creatio.Linq.QueryGeneration
 
 		private void VisitLogicalOperandExpression(Expression expression)
 		{
+			Trace.WriteLine($"VisitLogicalOperand: {expression}");
+
 			if (!LogicalOperations.TryGetValue(expression.NodeType, out _))
 			{
-				using (_aggregator.PushFilter())
+				Trace.WriteLine("NOTE!!! Correct refactoring here.");
+				using (_state.PushFilter(LogicalOperationStrict.And))
 				{
 					Visit(expression);
 				}
