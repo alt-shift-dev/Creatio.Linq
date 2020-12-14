@@ -3,7 +3,7 @@
 	/// <summary>
 	/// Defines query part aggregation mode.
 	/// </summary>
-	public enum QueryPartAggregationMode
+	public enum QueryCollectionState
 	{
 		/// <summary>
 		/// Aggregation mode not defined.

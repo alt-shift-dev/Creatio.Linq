@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using Creatio.Linq.QueryGeneration.Data;
 using Creatio.Linq.QueryGeneration.Data.States;
+using Creatio.Linq.QueryGeneration.Util;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
 using Remotion.Linq.Clauses.ResultOperators;
@@ -102,6 +104,7 @@ namespace Creatio.Linq.QueryGeneration
 				_state.SetComparison(comparisonType, value);
 
 				Trace.WriteLine($"Assuming comparison: {leftOperand} {comparisonType} {rightOperand}");
+				return;
 			}
 
 			if (LogicalOperations.TryGetValue(expression.NodeType, out var logicalOperation))
@@ -113,7 +116,18 @@ namespace Creatio.Linq.QueryGeneration
 				}
 
 				Trace.WriteLine($"Assuming logical operation: {logicalOperation}");
+				return;
 			}
+
+			if (expression.NodeType == ExpressionType.ArrayIndex)
+			{
+				var index = (int)Evaluate(expression.Right);
+				_state.SetColumn(QueryUtils.GetIndexMemberName(index));
+				
+				return;
+			}
+
+			throw new InvalidOperationException($"Operation {expression} is not supported by this LINQ provider.");
 		}
 
 		protected override Expression VisitMember(MemberExpression expression)
@@ -129,11 +143,18 @@ namespace Creatio.Linq.QueryGeneration
 			}
 			else
 			{
+				var declaringType = expression.Expression.Type;
+				if (!declaringType.IsAnonymousType() && !declaringType.IsLinqGrouping())
+				{
+					throw new InvalidOperationException($"Unable to evaluate {expression.Expression.Type.Name}.{expression.Member.Name}. " +
+					                                $"Only group columns and explicitly defined columns (via Column<T>(\"ColumnName\")) are supported.");
+				}
+
 				Visit(expression.Expression);
 
 				var memberName = expression.Member.Name;
 
-				_state.SetColumn(memberName, null);
+				_state.SetColumn(memberName);
 
 				Trace.WriteLine($"Requested member: {memberName}");
 			}
@@ -165,7 +186,7 @@ namespace Creatio.Linq.QueryGeneration
 
 			foreach (var arg in expression.Arguments)
 			{
-				using (_state.PushResultElement())
+				using (_state.PushColumn())
 				{
 					Trace.WriteLine($"Select new argument: {arg}");
 					Visit(arg);
@@ -183,53 +204,49 @@ namespace Creatio.Linq.QueryGeneration
 
 			var method = expression.Method;
 
-			if (method.Name == "Contains")
+			switch (method.Name)
 			{
-				var obj = Evaluate(expression.Object);
-				var pattern = Evaluate(expression.Arguments[0]);
+				case "Contains":
+				case "StartsWith":
+				case "EndsWith":
+					var obj = Evaluate(expression.Object);
+					var pattern = Evaluate(expression.Arguments[0]);
 
-				_state.SetColumn(obj.ToString(), typeof(string));
-				_state.SetComparison(FilterComparisonType.Contain, pattern);
-				Trace.WriteLine($"{_state.LastColumn} LIKE '%{pattern}%'");
+					_state.SetColumn(obj.ToString());
+					_state.SetFunction(method.Name, pattern);
 
-				return expression;
-			}
+					return expression;
 
-			if (method.Name == "StartsWith")
-			{
-				var obj = Evaluate(expression.Object);
-				var pattern = Evaluate(expression.Arguments[0]);
+				case "Min":
+				case "Max":
+				case "Count":
+				case "Average":
+				case "Sum":
+					using (_state.PushCollectorMode(QueryCollectionState.Aggregate))
+					{
+						object value = null;
 
-				_state.SetColumn(obj.ToString(), typeof(string));
-				_state.SetComparison(FilterComparisonType.StartWith, pattern);
+						if (expression.Arguments.Count > 1)
+						{
+							throw new InvalidOperationException($"Unsupported number of aggregate function arguments: {expression.Arguments.Count}");
+						}
+						if (expression.Arguments.Count > 0)
+						{
+							value = Evaluate(expression.Arguments[0]);
+						}
 
-				Trace.WriteLine($"{_state.LastColumn} LIKE '{pattern}%");
+						_state.SetFunction(method.Name, value);
+					}
 
-				return expression;
-			}
+					return expression;
 
-			if (method.Name == "EndsWith")
-			{
-				var obj = Evaluate(expression.Object);
-				var pattern = Evaluate(expression.Arguments[0]);
+				case "Column":
+					var columnName = Evaluate(expression.Arguments[0]).ToString();
 
-				_state.SetColumn(obj.ToString(), typeof(string));
-				_state.SetComparison(FilterComparisonType.EndWith, pattern);
+					_arguments.Push(columnName);
+					_state.SetColumn(columnName);
 
-				Trace.WriteLine($"{obj} LIKE '%{pattern}'");
-
-				return expression;
-			}
-
-			if (method.Name == "Column" && expression.Object?.Type == typeof(DynamicEntity))
-			{
-				var columnName = Evaluate(expression.Arguments[0]).ToString();
-				Trace.WriteLine($"[column] -> {columnName}");
-
-				_arguments.Push(columnName);
-				_state.SetColumn(columnName, expression.Type);
-
-				return expression;
+					return expression;
 			}
 
 			return base.VisitMethodCall(expression); // throws
@@ -271,17 +288,40 @@ namespace Creatio.Linq.QueryGeneration
 
 		private void VisitResultOperator(ResultOperatorBase resultOperator)
 		{
-			Trace.WriteLine($"VisitResultOperator: {resultOperator}");
+			Trace.WriteLine($"VisitResultOperator: {resultOperator}, type {resultOperator.GetType().Name}");
 
-			if (resultOperator is ContainsResultOperator containsResult)
+			switch (resultOperator)
 			{
-				Visit(containsResult.Item);
+				case MinResultOperator _:
+					_state.SetFunction("Min", null);
+					break;
 
-				var columnPath = (string)_arguments.Pop();
-				var value = _arguments.Pop();
+				case MaxResultOperator _:
+					_state.SetFunction("Max", null);
+					break;
 
-				_state.SetColumn(columnPath, typeof(string));
-				_state.SetComparison(FilterComparisonType.Equal, value);
+				case AverageResultOperator _:
+					_state.SetFunction("Average", null);
+					break;
+
+				case CountResultOperator _:
+					_state.SetFunction("Count", null);
+					break;
+
+				case SumResultOperator _:
+					_state.SetFunction("Sum", null);
+					break;
+
+				case ContainsResultOperator containsResult:
+					Visit(containsResult.Item);
+
+					var columnPath = (string)_arguments.Pop();
+					var value = _arguments.Pop();
+
+					_state.SetColumn(columnPath);
+					_state.SetComparison(FilterComparisonType.Equal, value);
+					break;
+
 			}
 		}
 

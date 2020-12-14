@@ -18,7 +18,7 @@ namespace Creatio.Linq.QueryGeneration
 	/// </summary>
 	internal class EntitySchemaQueryExpressionModelVisitor: QueryModelVisitorBase
 	{
-		private readonly QueryPartsAggregator _aggregator;
+		private readonly QueryPartCollector _aggregator;
 		private readonly QueryCollectorState _state;
 
 		public static QueryData GenerateEntitySchemaQueryData(QueryModel queryModel)
@@ -30,7 +30,7 @@ namespace Creatio.Linq.QueryGeneration
 
 		public EntitySchemaQueryExpressionModelVisitor()
 		{
-			_aggregator = new QueryPartsAggregator();
+			_aggregator = new QueryPartCollector();
 			_state = new QueryCollectorState(_aggregator);
 		}
 
@@ -48,71 +48,87 @@ namespace Creatio.Linq.QueryGeneration
 
 		public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitResultOperator: {resultOperator}");
+			Trace.WriteLine($"VisitResultOperator: {resultOperator}, type {resultOperator.GetType().Name}");
 
-			// First()
-			if (resultOperator is FirstResultOperator)
+			switch (resultOperator)
 			{
-				_aggregator.Take = 1;
-				return;
-			}
+				// First()
+				case FirstResultOperator _:
+					_aggregator.Take = 1;
+					break;
 
-			// Count()
-			if (resultOperator is CountResultOperator || resultOperator is LongCountResultOperator)
-			{
-				_aggregator.ReturnCount = true;
-			}
+				// Count()
+				case CountResultOperator _:
+				case LongCountResultOperator _:
+					_aggregator.ReturnCount = true;
+					break;
 
-			// Take()
-			if (resultOperator is TakeResultOperator takeOperator)
-			{
-				var exp = takeOperator.Count;
+				// Take()
+				case TakeResultOperator takeOperator:
+					var takeExpr = takeOperator.Count;
 
-				if (exp.NodeType == ExpressionType.Constant)
-				{
-					_aggregator.Take = (int) ((ConstantExpression) exp).Value;
-				}
-				else
-				{
-					throw new NotSupportedException("Currently not supporting methods or variables in the Skip or Take clause.");
-				}
-			}
-
-			// Skip()
-			if (resultOperator is SkipResultOperator skipResult)
-			{
-				var exp = skipResult.Count;
-
-				if (exp.NodeType == ExpressionType.Constant)
-				{
-					_aggregator.Skip = (int) ((ConstantExpression) exp).Value;
-				}
-				else
-				{
-					throw new NotSupportedException("Currently not supporting methods or variables in the Skip or Take clause.");
-				}
-			}
-
-			// GroupBy()
-			if (resultOperator is GroupResultOperator groupResult)
-			{
-				using (_state.PushAggregationMode(QueryPartAggregationMode.GroupBy))
-				{
-					var key = groupResult.KeySelector;
-					var elementSelector = groupResult.ElementSelector;
-
-					UpdateEntitySchemaQueryExpression(key);
-					UpdateEntitySchemaQueryExpression(elementSelector);
-
-					if (key is NewExpression newKeySelector)
+					if (takeExpr.NodeType == ExpressionType.Constant)
 					{
-						int position = 0;
-						foreach (var memberInfo in newKeySelector.Members)
+						_aggregator.Take = (int)((ConstantExpression)takeExpr).Value;
+					}
+					else
+					{
+						throw new NotSupportedException("Currently not supporting methods or variables in the Skip or Take clause.");
+					}
+
+					break;
+
+				// Skip()
+				case SkipResultOperator skipOperator:
+					var skipExpr = skipOperator.Count;
+
+					if (skipExpr.NodeType == ExpressionType.Constant)
+					{
+						_aggregator.Skip = (int)((ConstantExpression)skipExpr).Value;
+					}
+					else
+					{
+						throw new NotSupportedException("Currently not supporting methods or variables in the Skip or Take clause.");
+					}
+
+					break;
+
+				// Min()
+				case MinResultOperator _:
+					_state.SetFunction("Min", null);
+					break;
+
+				// Max()
+				case MaxResultOperator _:
+					_state.SetFunction("Max", null);
+					break;
+
+				// Average()
+				case AverageResultOperator _:
+					_state.SetFunction("Average", null);
+					break;
+
+				// GroupBy()
+				case GroupResultOperator groupOperator:
+					using (_state.PushCollectorMode(QueryCollectionState.GroupBy))
+					{
+						var key = groupOperator.KeySelector;
+						var elementSelector = groupOperator.ElementSelector;
+
+						UpdateEntitySchemaQueryExpression(key);
+						UpdateEntitySchemaQueryExpression(elementSelector);
+
+						if (key is NewExpression newKeySelector)
 						{
-							_state.SetColumnAlias(position++, memberInfo.Name);
+							int position = 0;
+							foreach (var memberInfo in newKeySelector.Members)
+							{
+								_state.SetColumnAlias(position++, memberInfo.Name);
+							}
 						}
 					}
-				}
+
+					break;
 			}
 		}
 
@@ -136,7 +152,7 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitSelectClause: {selectClause}");
 
-			using (_state.PushAggregationMode(QueryPartAggregationMode.Select))
+			using (_state.PushCollectorMode(QueryCollectionState.Select))
 			{
 
 				UpdateEntitySchemaQueryExpression(selectClause.Selector);
@@ -149,7 +165,7 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitWhereClause: {whereClause}");
 
-			using (_state.PushAggregationMode(QueryPartAggregationMode.Where))
+			using (_state.PushCollectorMode(QueryCollectionState.Where))
 			{
 				using (_state.PushFilter(LogicalOperationStrict.And))
 				{
@@ -164,7 +180,7 @@ namespace Creatio.Linq.QueryGeneration
 		{
 			Trace.WriteLine($"VisitOrderByClause: {orderByClause}");
 
-			using (_state.PushAggregationMode(QueryPartAggregationMode.OrderBy))
+			using (_state.PushCollectorMode(QueryCollectionState.OrderBy))
 			{
 				foreach (var ordering in orderByClause.Orderings)
 				{

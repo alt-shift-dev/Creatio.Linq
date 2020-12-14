@@ -127,16 +127,30 @@ namespace Creatio.Linq.Tests
 				.QuerySchema("Contact")
 				.GroupBy(item => new
 				{
-					CreatedBy = item.Column<Guid>("CreatedBy"), 
-					SysAdminUnitTypeValue = item.Column<int>("[SysAdminUnit:ContactId:Id].SysAdminUnitTypeValue")
+					AccountId = item.Column<Guid>("Account"), 
+					SysAdminUnitTypeValue = item.Column<int>("[SysAdminUnit:Contact:Id].SysAdminUnitTypeValue")
 				})
 				.Select(group => new
 				{
-					CreatedBy = group.Key.CreatedBy,
+					CreatedBy = group.Key.AccountId,
 					SysAdminUnitTypeValue = group.Key.SysAdminUnitTypeValue,
-					Count = group.Min(item => item.Column<DateTime>("CreatedOn"))
+					MinValue = group.Min(item => item.Column<DateTime>("CreatedOn")),
+					//MaxValue = group.Max(),
+					AvgValue = group.Average(item => item.Column<int>("Completeness")),
+					//CountValue = group.Count()
 				})
 				.ToArray();
+
+			Assert.IsNotNull(contacts);
+		}
+
+		[TestMethod]
+		public void ShouldRecognizeSystemColumns()
+		{
+			var contacts = UserConnection
+				.QuerySchema("Contact")
+				.GroupBy(item => item.PrimaryColumnValue)
+				.Count();
 		}
 
 		[TestMethod]
@@ -146,7 +160,7 @@ namespace Creatio.Linq.Tests
 				.QuerySchema("Contact")
 				.GroupBy(item => new object[] {
 					item.Column<Guid>("CreatedBy"),
-					item.Column<int>("[SysAdminUnit:ContactId:Id].SysAdminUnitTypeValue")
+					item.Column<int>("[SysAdminUnit:Contact:Id].SysAdminUnitTypeValue")
 				})
 				.Select(group => new
 				{
@@ -158,13 +172,11 @@ namespace Creatio.Linq.Tests
 		}
 
 		[TestMethod]
-		public void TestParameterAndConst()
+		public void ShouldDoAggregation()
 		{
-			new Update(UserConnection, "Contact")
-				.Set("FirstName", Column.Parameter("Don't mind"))
-				.Set("LastName", Column.Const("Isn't it nice?"))
-				.Where("Id").IsEqual(Column.Const(Guid.Empty))
-				.Execute(UserConnection.EnsureDBConnection());
+			var contactCount = UserConnection
+				.QuerySchema("Contact")
+				.Min(item => item.Column<DateTime>("CreatedOn"));
 		}
 	}
 }

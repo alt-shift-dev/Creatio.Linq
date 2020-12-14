@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
 using Terrasoft.Common;
@@ -7,15 +8,21 @@ using Terrasoft.Core.Entities;
 namespace Creatio.Linq.QueryGeneration.Data.States
 {
 	/// <summary>
-	/// Defines behavior of <see cref="QueryPartsAggregator"/> when re-linq is visiting Where clause.
+	/// Defines behavior of <see cref="QueryPartCollector"/> when re-linq is visiting Where clause.
 	/// </summary>
 	internal class QueryCollectorStateWhere: QueryCollectorStateBase
 	{
 		private QueryFilterCollection _currentFilter;
 		private string _filterColumn = null;
+		private Dictionary<string, FilterComparisonType> _comparisonMap = new Dictionary<string, FilterComparisonType>
+		{
+			["StartsWith"] = FilterComparisonType.StartWith,
+			["Contains"] = FilterComparisonType.Contain,
+			["EndsWith"] = FilterComparisonType.EndWith,
+		};
 
 
-		public QueryCollectorStateWhere(QueryPartsAggregator aggregator) : base(aggregator)
+		public QueryCollectorStateWhere(QueryPartCollector aggregator) : base(aggregator)
 		{
 			Trace.WriteLine("Entering Where state.");
 			_currentFilter = aggregator.Filters;
@@ -29,24 +36,14 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 			_filterColumn = null;
 		}
 
-		public override void SetColumn(string columnPath, Type columnType)
+		public override void SetColumn(string columnPath)
 		{
 			_filterColumn = columnPath;
-		}
-
-		public override void SetSortOrder(bool descending)
-		{
-			throw new NotImplementedException();
 		}
 
 		public override void SetNegative()
 		{
 			_currentFilter.Negative = true;
-		}
-
-		public override void SetColumnAlias(int position, string alias)
-		{
-			throw new NotImplementedException();
 		}
 
 		public override void PushFilter(LogicalOperationStrict? operation)
@@ -71,14 +68,14 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 			_currentFilter = _currentFilter.TryUniteWithParent();
 		}
 
-		public override void PushColumn()
+		public override void SetFunction(string methodName, object value)
 		{
-			throw new NotImplementedException();
-		}
+			if (!_comparisonMap.ContainsKey(methodName))
+			{
+				throw new InvalidOperationException($"Function '{methodName}' is not supported in Where() clause.");
+			}
 
-		public override void PopColumn()
-		{
-			throw new NotImplementedException();
+			SetComparison(_comparisonMap[methodName], value);
 		}
 
 		public override void Dispose()

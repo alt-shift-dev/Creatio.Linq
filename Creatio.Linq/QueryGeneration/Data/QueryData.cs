@@ -11,9 +11,9 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Aggregated query elements.
 		/// </summary>
-		public QueryPartsAggregator QueryParts { get; }
+		public QueryPartCollector QueryParts { get; }
 
-		public QueryData(QueryPartsAggregator queryParts)
+		public QueryData(QueryPartCollector queryParts)
 		{
 			QueryParts = queryParts ?? throw new ArgumentNullException(nameof(queryParts));
 		}

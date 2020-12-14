@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Diagnostics;
+using Terrasoft.Common;
 
 namespace Creatio.Linq.QueryGeneration.Data.Fragments
 {
 	/// <summary>
 	/// Represents query result column.
 	/// </summary>
-	[DebuggerDisplay("{ColumnPath} ({ColumnType})")]
+	[DebuggerDisplay("{ColumnPath} ({AggregationType})")]
 	internal class QuerySelectColumnData
 	{
 		/// <summary>
@@ -20,18 +21,19 @@ namespace Creatio.Linq.QueryGeneration.Data.Fragments
 		public string Name { get; set; }
 
 		/// <summary>
-		/// Column type.
+		/// Aggregation func
 		/// </summary>
-		public Type ColumnType { get; set; }
+		public AggregationTypeStrict? AggregationType { get; set; }
 
-
-		public QuerySelectColumnData(string columnPath, Type columnType)
+		/// <summary>
+		/// Get internal column identifier - with column path and aggregation type.
+		/// </summary>
+		/// <returns></returns>
+		public string GetColumnId()
 		{
-			if (string.IsNullOrEmpty(columnPath)) throw new ArgumentNullException(nameof(columnPath));
-			//if (null == columnType) throw new ArgumentNullException(nameof(columnType));
-
-			ColumnPath = columnPath;
-			ColumnType = columnType;
+			return AggregationType.HasValue
+				? $"{ColumnPath}|{AggregationType}"
+				: ColumnPath;
 		}
 	}
 }

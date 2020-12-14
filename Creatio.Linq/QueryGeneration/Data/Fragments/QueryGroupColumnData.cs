@@ -36,5 +36,11 @@ namespace Creatio.Linq.QueryGeneration.Data.Fragments
 			ColumnPath = columnPath;
 			Position = position;
 		}
+
+		/// <summary>
+		/// Gets column identifier (like for select columns).
+		/// </summary>
+		/// <returns></returns>
+		public string GetColumnId() => ColumnPath;
 	}
 }

@@ -35,18 +35,7 @@ namespace Creatio.Linq
 		{
 			throw new InvalidOperationException("Do not use this method except for defining LINQ queries.");
 		}
-
-		/// <summary>
-		/// Same as <see cref="Column{T}"/> but used to define aggregated columns.
-		/// </summary>
-		/// <typeparam name="T">Type of column value.</typeparam>
-		/// <param name="columnPath">ESQ expression for column path.</param>
-		/// <returns>default(T[])</returns>
-		public T[] AggColumn<T>(string columnPath)
-		{
-			throw new InvalidOperationException("Do not use this method except for defining LINQ queries.");
-		}
-
+		
 		#endregion
 	}
 }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 using Terrasoft.Common;
 using Terrasoft.Core.Entities;
+using Terrasoft.Core.Process.Tracing;
 
 namespace Creatio.Linq.QueryGeneration.Data.States
 {
@@ -11,7 +13,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 	/// </summary>
 	internal class QueryCollectorState: IDisposable
 	{
-		private QueryPartsAggregator _aggregator;
+		private QueryPartCollector _aggregator;
 		private Stack<QueryCollectorStateBase> _states = new Stack<QueryCollectorStateBase>();
 		private QueryCollectorStateBase _currentState;
 
@@ -20,57 +22,72 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		/// </summary>
 		public string LastColumn => _currentState?.LastColumnPath;
 
-		public QueryCollectorState(QueryPartsAggregator aggregator)
+		public QueryCollectorState(QueryPartCollector aggregator)
 		{
 			_aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
-			SetAggregationMode(QueryPartAggregationMode.Aggregate);
+			SetAggregationMode(QueryCollectionState.Aggregate);
 		}
 
 		public void SetComparison(FilterComparisonType comparison, object value)
 		{
+			Trace.WriteLine($"* SetComparison: {comparison} {value}");
 			_currentState.SetComparison(comparison, value);
 		}
 
-		public void SetColumn(string columnPath, Type columnType)
+		public void SetFunction(string methodName, object arg)
 		{
-			_currentState.SetColumn(columnPath, columnType);
+			Trace.WriteLine($"* SetFunction: {methodName} {arg}");
+			_currentState.SetFunction(methodName, arg);
 		}
 
-		public void SetSortOrder(bool @descending)
+		public void SetColumn(string columnPath)
 		{
-			_currentState.SetSortOrder(@descending);
+			Trace.WriteLine($"* SetColumn: {columnPath}");
+			_currentState.SetColumn(columnPath);
+		}
+
+		public void SetSortOrder(bool descending)
+		{
+			Trace.WriteLine($"* SetOrder: descending: {descending}");
+			_currentState.SetSortOrder(descending);
 		}
 
 		public void SetNegative()
 		{
+			Trace.WriteLine($"* SetNegative");
 			_currentState.SetNegative();
 		}
 
 		public void SetColumnAlias(int position, string alias)
 		{
+			Trace.WriteLine($"* SetColumnAlias: {alias} ({position})");
 			_currentState.SetColumnAlias(position, alias);
 		}
 
 		public IDisposable PushFilter(LogicalOperationStrict? operation)
 		{
+			Trace.WriteLine($"-> PushFilter: {operation}");
 			_currentState.PushFilter(operation);
 			return new QueryModeRestorer(PopFilter);
 		}
 
 		public void PopFilter()
 		{
+			Trace.WriteLine("<- PopFilter");
 			_currentState.PopFilter();
 		}
 
-		public IDisposable PushResultElement()
+		public IDisposable PushColumn()
 		{
+			Trace.WriteLine("-> PushColumn");
 			_currentState.PushColumn();
 
-			return new QueryModeRestorer(PopResultElement);
+			return new QueryModeRestorer(PopColumn);
 		}
 
-		public void PopResultElement()
+		public void PopColumn()
 		{
+			Trace.WriteLine("<- PopColumn");
 			_currentState.PopColumn();
 		}
 
@@ -83,52 +100,56 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		/// Sets aggregation mode.
 		/// </summary>
 		/// <param name="mode">New aggregation mode.</param>
-		public void SetAggregationMode(QueryPartAggregationMode mode)
+		public void SetAggregationMode(QueryCollectionState mode)
 		{
 			_states.Push(_currentState);
 
 			switch (mode)
 			{
-				case QueryPartAggregationMode.Where:
+				case QueryCollectionState.Where:
 					_currentState = new QueryCollectorStateWhere(_aggregator);
 					return;
 
-				case QueryPartAggregationMode.OrderBy:
+				case QueryCollectionState.OrderBy:
 					_currentState = new QueryCollectorStateOrderBy(_aggregator);
 					return;
 
-				case QueryPartAggregationMode.Select:
+				case QueryCollectionState.Select:
 					_currentState = new QueryCollectorStateSelect(_aggregator);
 					return;
 
-				case QueryPartAggregationMode.GroupBy:
+				case QueryCollectionState.GroupBy:
 					_currentState = new QueryCollectorStateGroupBy(_aggregator);
 					return;
 
-				case QueryPartAggregationMode.Aggregate:
+				case QueryCollectionState.Aggregate:
 					_currentState = new QueryCollectorStateAggregation(_aggregator);
 					return;
 
 				default:
-					throw new InvalidOperationException($"Aggregation mode {mode} is not yet supported by QueryPartsAggregator.");
+					throw new InvalidOperationException($"Aggregation mode {mode} is not yet supported by QueryPartCollector.");
 			}
 		}
 
 		/// <summary>
 		/// Sets new aggregation mode.
 		/// </summary>
-		public IDisposable PushAggregationMode(QueryPartAggregationMode mode)
+		public IDisposable PushCollectorMode(QueryCollectionState mode)
 		{
+			Trace.WriteLine($"-> PushCollectorMode: {mode}");
+
 			SetAggregationMode(mode);
 
-			return new QueryModeRestorer(PopAggregationMode);
+			return new QueryModeRestorer(PopCollectorMode);
 		}
 
 		/// <summary>
 		/// Restores previous aggregation mode.
 		/// </summary>
-		public void PopAggregationMode()
+		public void PopCollectorMode()
 		{
+			Trace.WriteLine($"<- PopCollectorMode");
+
 			if (null == _currentState)
 			{
 				throw new InvalidOperationException($"Unable to restore previous aggregation mode, history is empty.");
@@ -142,7 +163,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		{
 			if (null != _currentState)
 			{
-				PopAggregationMode();
+				PopCollectorMode();
 			}
 		}
 	}

@@ -5,13 +5,13 @@ using Terrasoft.Core.Entities;
 namespace Creatio.Linq.QueryGeneration.Data.States
 {
 	/// <summary>
-	/// Base class for handling <see cref="QueryPartsAggregator"/> states.
+	/// Base class for handling <see cref="QueryPartCollector"/> states.
 	/// </summary>
 	internal abstract class QueryCollectorStateBase: IDisposable
 	{
-		protected QueryPartsAggregator Aggregator { get; set; }
+		protected QueryPartCollector Aggregator { get; set; }
 
-		protected QueryCollectorStateBase(QueryPartsAggregator aggregator)
+		protected QueryCollectorStateBase(QueryPartCollector aggregator)
 		{
 			Aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
 		}
@@ -23,7 +23,12 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 			throw new NotSupportedException($"State handler '{GetType().Name}' does not support method {nameof(SetComparison)}");
 		}
 
-		public virtual void SetColumn(string columnPath, Type columnType)
+		public virtual void SetFunction(string methodName, object value)
+		{
+			throw new NotSupportedException($"State handler '{GetType().Name}' does not support method {nameof(SetFunction)}");
+		}
+
+		public virtual void SetColumn(string columnPath)
 		{
 			throw new NotSupportedException($"State handler '{GetType().Name}' does not support method {nameof(SetColumn)}");
 		}
@@ -45,7 +50,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public virtual void PushFilter(LogicalOperationStrict? operation)
 		{
-			throw new NotSupportedException($"State handler '{GetType().Name}' does not support method {nameof(PopFilter)}");
+			throw new NotSupportedException($"State handler '{GetType().Name}' does not support method {nameof(PushFilter)}");
 		}
 
 		public virtual void PopFilter()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
 using Creatio.Linq.QueryGeneration.Data.States;
@@ -13,7 +14,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 	/// <summary>
 	/// Aggregates query info.
 	/// </summary>
-	internal class QueryPartsAggregator
+	internal class QueryPartCollector
 	{
 		private List<QueryOrderData> _orders = new List<QueryOrderData>();
 		private List<QuerySelectColumnData> _select = new List<QuerySelectColumnData>();
@@ -60,6 +61,21 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// Whether query returns anonymous class with projection
 		/// </summary>
 		public bool UseResultProjection => _resultTypeConstructor != null;
+
+		/// <summary>
+		/// Whether any select columns were defined.
+		/// </summary>
+		public bool SelectColumnsDefined => _select.Any();
+
+		/// <summary>
+		/// Whether any grouping columns were defined.
+		/// </summary>
+		public bool GroupingColumnsDefined => _groups.Any();
+
+		/// <summary>
+		/// Whether any ordering columns were defined.
+		/// </summary>
+		public bool OrderingColumnsDefined => _orders.Any();
 
 		/// <summary>
 		/// Gets ConstructorInfo provided by re-linq for generating query result items.

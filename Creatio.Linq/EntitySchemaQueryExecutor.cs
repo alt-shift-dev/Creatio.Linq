@@ -53,8 +53,6 @@ namespace Creatio.Linq
 			var esq = queryData.CreateQuery(_userConnection, _schemaName);
 			var esqOptions = GetQueryOptions(esq, queryData);
 
-			LogAggregatedQueryParts(queryData.QueryParts);
-
 			Trace.WriteLine(esq.GetSelectQuery(_userConnection).GetSqlText());
 
 			var entityCollection = null == esqOptions
@@ -91,7 +89,7 @@ namespace Creatio.Linq
 
 		}
 
-		private void LogAggregatedQueryParts(QueryPartsAggregator aggregator)
+		private void LogAggregatedQueryParts(QueryPartCollector aggregator)
 		{
 			var serialized = JsonConvert.SerializeObject(
 				aggregator,
