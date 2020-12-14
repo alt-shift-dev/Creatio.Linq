@@ -59,7 +59,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		{
 			if (!IsColumnDataDefined())
 			{
-				Trace.WriteLine("[!] Attempt to call AppendColumn when no column data is defined.");
+				return;
 			}
 
 			var columnPath = _fragments.Any()

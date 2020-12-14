@@ -1,8 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
-using Terrasoft.Common;
-using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration.Data.States
 {

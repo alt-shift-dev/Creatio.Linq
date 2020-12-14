@@ -34,6 +34,31 @@ namespace Creatio.Linq.Tests
 			}
 		}
 
+		public static class Activity
+		{
+			public static class Type
+			{
+				public static readonly Guid Task = new Guid("FBE0ACDC-CFC0-DF11-B00F-001D60E938C6");
+				public static readonly Guid Call = new Guid("E1831DEC-CFC0-DF11-B00F-001D60E938C6");
+				public static readonly Guid Email = new Guid("E2831DEC-CFC0-DF11-B00F-001D60E938C6");
+			}
+
+			public static class Priority
+			{
+				public static readonly Guid High = new Guid("D625A9FC-7EE6-DF11-971B-001D60E938C6");
+				public static readonly Guid Medium = new Guid("AB96FA02-7FE6-DF11-971B-001D60E938C6");
+				public static readonly Guid Low = new Guid("AC96FA02-7FE6-DF11-971B-001D60E938C6");
+			}
+
+			public static class Status
+			{
+				public static readonly Guid NotStarted = new Guid("384D4B84-58E6-DF11-971B-001D60E938C6");
+				public static readonly Guid InProgress = new Guid("394D4B84-58E6-DF11-971B-001D60E938C6");
+				public static readonly Guid Completed = new Guid("4BDBB88F-58E6-DF11-971B-001D60E938C6");
+				public static readonly Guid Cancelled = new Guid("201CFBA8-58E6-DF11-971B-001D60E938C6");
+			}
+		}
+
 		public static class Contact
 		{
 			public static class Type
@@ -43,6 +68,7 @@ namespace Creatio.Linq.Tests
 				public static readonly Guid Employee = new Guid("60733EFC-F36B-1410-A883-16D83CAB0980");
 			}
 		}
+
 
 
 		public static class CommunicationType

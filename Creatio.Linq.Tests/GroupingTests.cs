@@ -111,7 +111,7 @@ namespace Creatio.Linq.Tests
 				.Select(group => new
 				{
 					AccountCategory = group.Key,
-					Count = group.Count() + 2,
+					Count = group.Count(),
 					Min = group.Min(item => item.Column<DateTime>("CreatedOn"))
 				})
 				.ToArray();

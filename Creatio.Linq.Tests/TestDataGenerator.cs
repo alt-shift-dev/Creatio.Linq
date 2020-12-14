@@ -1,4 +1,5 @@
-﻿using Terrasoft.Core;
+﻿using System;
+using Terrasoft.Core;
 
 namespace Creatio.Linq.Tests
 {
@@ -55,6 +56,47 @@ namespace Creatio.Linq.Tests
 					CountryId = Consts.Country.Russia,
 					Notes = "$UnitTest$"
 				});
+		}
+
+		public static void GenerateActivities(UserConnection userConnection)
+		{
+			// duration: 1 day, start today
+			userConnection.CreateEntity("Activity", new
+			{
+				Title = $"Test_Email",
+				PriorityId = Consts.Activity.Priority.High,
+				TypeId = Consts.Activity.Type.Email,
+				StatusId = Consts.Activity.Status.NotStarted,
+				StartDate = DateTime.Today,
+				DueDate = DateTime.Today + TimeSpan.FromDays(1),
+				DetailedResult = "$UnitTest$",
+			});
+
+			// duration: 2 days, start today
+			userConnection.CreateEntity("Activity", new
+			{
+				Title = $"Test_Task",
+				PriorityId = Consts.Activity.Priority.Low,
+				TypeId = Consts.Activity.Type.Task,
+				StatusId = Consts.Activity.Status.Cancelled,
+				StartDate = DateTime.Today,
+				DueDate = DateTime.Today + TimeSpan.FromDays(2),
+				DetailedResult = "$UnitTest$",
+			});
+
+			// duration: 1 day, start yesterday
+			userConnection.CreateEntity("Activity", new
+			{
+				Title = $"Test_Call",
+				PriorityId = Consts.Activity.Priority.Medium,
+				TypeId = Consts.Activity.Type.Call,
+				StatusId = Consts.Activity.Status.Completed,
+				StartDate = DateTime.Today - TimeSpan.FromDays(1),
+				DueDate = DateTime.Today,
+				DetailedResult = "$UnitTest$",
+			});
+
+			
 		}
 	}
 }
