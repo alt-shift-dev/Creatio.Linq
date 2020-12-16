@@ -52,9 +52,11 @@ namespace Creatio.Linq.QueryGeneration
 
 			LogAggregatedQueryParts(_queryParts);
 
+			ApplyResultAggregation(userConnection);
+			
 			var orphanGroupColumns = MergeAndGetOrphanGroupColumns().ToArray();
 
-			if (_queryParts.UseResultProjection)
+			if (_queryParts.UseResultProjection || _queryParts.ResultAggregationType.HasValue)
 			{
 				ApplySelectColumns(esq, columnMap, _queryParts.Select);
 			}
@@ -69,6 +71,7 @@ namespace Creatio.Linq.QueryGeneration
 
 			var resultProjector = CreateResultProjector(
 				_queryParts.ResultProjectionCtor,
+				_queryParts.ResultAggregationType,
 				_queryParts.Select.ToArray()
 			);
 
@@ -229,6 +232,53 @@ namespace Creatio.Linq.QueryGeneration
 				}
 			}
 		}
+		
+		/// <summary>
+		/// Applies result aggregation.
+		/// </summary>
+		private void ApplyResultAggregation(UserConnection userConnection)
+		{
+			if (_queryParts.ResultAggregationType.HasValue)
+			{
+				if (_queryParts.Select.Count > 1)
+				{
+					throw new InvalidOperationException(
+						$"'Count' aggregation can only be applied to 1 column, but you specified {_queryParts.Select.Count}");
+				}
+
+				switch (_queryParts.ResultAggregationType)
+				{
+					case AggregationTypeStrict.Avg:
+					case AggregationTypeStrict.Sum:
+					case AggregationTypeStrict.Min:
+					case AggregationTypeStrict.Max:
+						if (!_queryParts.SelectColumnsDefined)
+						{
+							throw new InvalidOperationException(
+								$"{_queryParts.ResultAggregationType} cannot be applied when no result column defined.");
+						}
+						
+						break;
+				}
+
+				if (!_queryParts.SelectColumnsDefined)
+				{
+					var columnPath = userConnection.EntitySchemaManager
+						.GetInstanceByName(_schemaName)
+						.PrimaryColumn.Name;
+					
+					_queryParts.AddSelect(new QuerySelectColumnData
+					{
+						AggregationType = _queryParts.ResultAggregationType,
+						ColumnPath = columnPath
+					});
+				}
+				else
+				{
+					_queryParts.Select.First().AggregationType = _queryParts.ResultAggregationType;
+				}
+			}
+		}
 
 		/// <summary>
 		/// Converts QueryFilterData to ESQ filter.
@@ -251,13 +301,21 @@ namespace Creatio.Linq.QueryGeneration
 		/// <summary>
 		/// Creates result projector for previously generated ESQ.
 		/// </summary>
-		private Func<Entity, object> CreateResultProjector(ConstructorInfo projectionConstructor, QuerySelectColumnData[] selectColumns)
+		private Func<Entity, object> CreateResultProjector(ConstructorInfo projectionConstructor, AggregationTypeStrict? resultAggregation, QuerySelectColumnData[] selectColumns)
 		{
-			// no projection means we should return same entity
+			// aggregation was defined
+			if (resultAggregation.HasValue)
+			{
+				return entity => entity.GetColumnValue(selectColumns.First().Name);
+			}
+			
+			// no aggregation & no projection means we should return same entity
 			if (null == projectionConstructor) return entity => entity;
+			
 			// but if projection was defined select columns are mandatory
 			if (null == selectColumns) throw new ArgumentNullException(nameof(selectColumns));
 
+			// all other cases
 			return entity =>
 			{
 				var ctorParams = selectColumns

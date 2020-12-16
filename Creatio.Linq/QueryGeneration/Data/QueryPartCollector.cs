@@ -21,7 +21,8 @@ namespace Creatio.Linq.QueryGeneration.Data
 		private List<QueryGroupColumnData> _groups = new List<QueryGroupColumnData>();
 		private QueryFilterCollection _filters = new QueryFilterCollection();
 		private ConstructorInfo _resultTypeConstructor;
-		
+		private AggregationTypeStrict? _resultAggregationType;
+
 		/// <summary>
 		/// Collection (hierarchical) of query filters.
 		/// </summary>
@@ -43,6 +44,11 @@ namespace Creatio.Linq.QueryGeneration.Data
 		public IReadOnlyList<QueryGroupColumnData> Groups => _groups.AsReadOnly();
 
 		/// <summary>
+		/// Gets aggregation type for the whole query (if defined).
+		/// </summary>
+		public AggregationTypeStrict? ResultAggregationType => _resultAggregationType;
+		
+		/// <summary>
 		/// Page size.
 		/// </summary>
 		public int? Take { get; set; }
@@ -51,11 +57,6 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// Page start.
 		/// </summary>
 		public int? Skip { get; set; }
-
-		/// <summary>
-		/// Should return number of rows selected instead of projection or not.
-		/// </summary>
-		public bool ReturnCount = false;
 
 		/// <summary>
 		/// Whether query returns anonymous class with projection
@@ -85,7 +86,6 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Add query sort.
 		/// </summary>
-		/// <param name="order"></param>
 		public void AddOrder(QueryOrderData order)
 		{
 			_orders.Add(order ?? throw new ArgumentNullException(nameof(order)));
@@ -94,7 +94,6 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Add query grouping.
 		/// </summary>
-		/// <param name="group"></param>
 		public void AddGroup(QueryGroupColumnData group)
 		{
 			_groups.Add(group ?? throw new ArgumentNullException(nameof(group)));
@@ -103,7 +102,6 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Add column to query results.
 		/// </summary>
-		/// <param name="select"></param>
 		public void AddSelect(QuerySelectColumnData select)
 		{
 			_select.Add(select ?? throw new ArgumentNullException(nameof(select)));
@@ -112,10 +110,17 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Sets <see cref="ConstructorInfo"/> used to create result projections.
 		/// </summary>
-		/// <param name="constructorInfo"></param>
 		public void SetResultConstructor(ConstructorInfo constructorInfo)
 		{
 			_resultTypeConstructor = constructorInfo ?? throw new ArgumentNullException(nameof(constructorInfo));
+		}
+
+		/// <summary>
+		/// Sets aggregation type for the whole query.
+		/// </summary>
+		public void SetResultAggregationType(AggregationTypeStrict aggregationType)
+		{
+			_resultAggregationType = aggregationType;
 		}
 	}
 }

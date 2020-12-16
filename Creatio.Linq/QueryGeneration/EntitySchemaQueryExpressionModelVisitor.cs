@@ -60,7 +60,7 @@ namespace Creatio.Linq.QueryGeneration
 				// Count()
 				case CountResultOperator _:
 				case LongCountResultOperator _:
-					_aggregator.ReturnCount = true;
+					_aggregator.SetResultAggregationType(AggregationTypeStrict.Count);
 					break;
 
 				// Take()

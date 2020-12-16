@@ -6,6 +6,9 @@ using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.Tests
 {
+	/// <summary>
+	/// Contains extensions for <see cref="Entity"/> class.
+	/// </summary>
 	public static class EntityExtensions
 	{
 		/// <summary>

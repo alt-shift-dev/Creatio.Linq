@@ -18,13 +18,8 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		public override void SetFunction(string methodName, object value)
 		{
 			if (string.IsNullOrEmpty(methodName)) throw new ArgumentNullException(nameof(methodName));
-
-			var aggregate = new QuerySelectColumnData
-			{
-				AggregationType = AggregationTypeConverter.FromString(methodName)
-			};
 			
-			Aggregator.AddSelect(aggregate);
+			Aggregator.SetResultAggregationType(AggregationTypeConverter.FromString(methodName));
 		}
 
 		public override void Dispose()
