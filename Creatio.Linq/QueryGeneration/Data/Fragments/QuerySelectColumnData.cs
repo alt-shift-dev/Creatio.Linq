@@ -8,13 +8,8 @@ namespace Creatio.Linq.QueryGeneration.Data.Fragments
 	/// Represents query result column.
 	/// </summary>
 	[DebuggerDisplay("{ColumnPath} ({AggregationType})")]
-	internal class QuerySelectColumnData
+	internal class QuerySelectColumnData: QueryColumnDataBase
 	{
-		/// <summary>
-		/// Column path.
-		/// </summary>
-		public string ColumnPath { get; set; }
-
 		/// <summary>
 		/// Column alias in ESQ.
 		/// </summary>

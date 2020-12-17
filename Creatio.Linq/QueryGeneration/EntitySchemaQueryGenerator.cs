@@ -14,6 +14,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Terrasoft.Common;
 using Terrasoft.Core;
+using Terrasoft.Core.DB;
 using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration
@@ -180,7 +181,7 @@ namespace Creatio.Linq.QueryGeneration
 		}
 
 		/// <summary>
-		/// Attempts to merge group columns with select columns, returns group columns which were not used in select.
+		/// Attempts to merge group columns with select/order columns, returns group columns which were not used in select.
 		/// </summary>
 		/// <returns></returns>
 		private IEnumerable<QueryGroupColumnData> MergeAndGetOrphanGroupColumns()
@@ -215,13 +216,26 @@ namespace Creatio.Linq.QueryGeneration
 						// case:
 						// .GroupBy(item => item.Column<int>("Column1"))
 						// .Select(group => new { Alias1 = group.Key })
-						|| !column.AggregationType.HasValue && column.ColumnPath == "Key"
+						|| !column.AggregationType.HasValue && column.ColumnPath == QueryUtils.SingleGroupColumnAlias
 						// case (aggregate columns have no column path):
 						// .GroupBy(item => item.Column<int>("Column1"))
 						// .Select(group => new { Alias1 = group.Key, Count = group.Count() })
 						|| column.AggregationType.HasValue && string.IsNullOrEmpty(column.ColumnPath))
 					.ToArray();
 
+				// same cases as above, except order column should have name
+				var orderKeyColumns = _queryParts.Orders
+					.Where(column =>
+						column.ColumnPath == QueryUtils.GetIndexMemberName(groupColumn.Position)
+						|| column.ColumnPath == QueryUtils.GetAliasMemberName(groupColumn.Alias)
+						|| column.ColumnPath == QueryUtils.SingleGroupColumnAlias)
+					.ToArray();
+
+				if (orderKeyColumns.Any())
+				{
+					orderKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
+				}
+				
 				if (selectKeyColumns.Any())
 				{
 					selectKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);

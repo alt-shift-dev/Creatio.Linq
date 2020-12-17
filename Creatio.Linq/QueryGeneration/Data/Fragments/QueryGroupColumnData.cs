@@ -7,13 +7,8 @@ namespace Creatio.Linq.QueryGeneration.Data.Fragments
 	/// Represents group column.
 	/// </summary>
 	[DebuggerDisplay("{ColumnPath} ({Position}) - {Alias}")]
-	internal class QueryGroupColumnData
+	internal class QueryGroupColumnData: QueryColumnDataBase
 	{
-		/// <summary>
-		/// ESQ column path.
-		/// </summary>
-		public string ColumnPath { get; set; }
-
 		/// <summary>
 		/// ESQ column name.
 		/// </summary>

@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
 
 namespace Creatio.Linq.QueryGeneration.Data.States
@@ -24,6 +25,11 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		public override void SetSortOrder(bool descending)
 		{
 			_descending = descending;
+		}
+
+		public override void SetFunction(string methodName, object value)
+		{
+			throw new InvalidOperationException($"Not supported: function '{methodName}' in OrderBy clause.");
 		}
 
 		public override void Dispose()

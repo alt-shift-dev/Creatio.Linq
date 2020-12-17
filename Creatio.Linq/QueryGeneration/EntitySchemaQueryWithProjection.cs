@@ -61,7 +61,9 @@ namespace Creatio.Linq.QueryGeneration
 			var result = _resultProjector(entity);
 			try
 			{
-				return (TResult) result;
+				return typeof(TResult) == result.GetType()
+					? (TResult) result
+					: (TResult) Convert.ChangeType(result, typeof(TResult));
 			}
 			catch
 			{

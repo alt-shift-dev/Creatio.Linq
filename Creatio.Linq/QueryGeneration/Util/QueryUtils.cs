@@ -5,6 +5,12 @@
 	/// </summary>
 	public class QueryUtils
 	{
+
+		/// <summary>
+		/// Column alias when query is grouped by single column.
+		/// </summary>
+		public static string SingleGroupColumnAlias => "Key";
+		
 		/// <summary>
 		/// Generate name for index columns after grouping.
 		/// </summary>

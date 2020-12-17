@@ -7,13 +7,8 @@ namespace Creatio.Linq.QueryGeneration.Data.Fragments
 	/// Query order column and direction.
 	/// </summary>
 	[DebuggerDisplay("{ColumnPath}, desc: {Descending}")]
-	internal class QueryOrderData
+	internal class QueryOrderData: QueryColumnDataBase
 	{
-		/// <summary>
-		/// ESQ column path.
-		/// </summary>
-		public string ColumnPath { get; set; }
-
 		/// <summary>
 		/// true if sort in descending order.
 		/// </summary>
