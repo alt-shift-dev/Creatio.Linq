@@ -16,7 +16,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 	/// </summary>
 	internal class QueryPartCollector
 	{
-		private List<QueryOrderData> _orders = new List<QueryOrderData>();
+		private List<QueryOrderColumnData> _orders = new List<QueryOrderColumnData>();
 		private List<QuerySelectColumnData> _select = new List<QuerySelectColumnData>();
 		private List<QueryGroupColumnData> _groups = new List<QueryGroupColumnData>();
 		private QueryFilterCollection _filters = new QueryFilterCollection();
@@ -31,7 +31,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Collection of sort orders.
 		/// </summary>
-		public IReadOnlyList<QueryOrderData> Orders => _orders.AsReadOnly();
+		public IReadOnlyList<QueryOrderColumnData> Orders => _orders.AsReadOnly();
 
 		/// <summary>
 		/// Collection of result columns.
@@ -86,9 +86,9 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Add query sort.
 		/// </summary>
-		public void AddOrder(QueryOrderData order)
+		public void AddOrder(QueryOrderColumnData orderColumn)
 		{
-			_orders.Add(order ?? throw new ArgumentNullException(nameof(order)));
+			_orders.Add(orderColumn ?? throw new ArgumentNullException(nameof(orderColumn)));
 		}
 
 		/// <summary>

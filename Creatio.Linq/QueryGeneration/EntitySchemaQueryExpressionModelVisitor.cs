@@ -184,8 +184,11 @@ namespace Creatio.Linq.QueryGeneration
 			{
 				foreach (var ordering in orderByClause.Orderings)
 				{
-					_state.SetSortOrder(ordering.OrderingDirection == OrderingDirection.Desc);
-					UpdateEntitySchemaQueryExpression(ordering.Expression);
+					using (_state.PushColumn())
+					{
+						_state.SetSortOrder(ordering.OrderingDirection == OrderingDirection.Desc);
+						UpdateEntitySchemaQueryExpression(ordering.Expression);
+					}
 				}
 
 				base.VisitOrderByClause(orderByClause, queryModel, index);

@@ -144,14 +144,24 @@ namespace Creatio.Linq.QueryGeneration
 		private static void ApplyOrderColumns(
 			EntitySchemaQuery esq, 
 			Dictionary<string, EntitySchemaQueryColumn> columnMap,
-			IEnumerable<QueryOrderData> orderColumns)
+			IEnumerable<QueryOrderColumnData> orderColumns)
 		{
 			int orderPosition = 1;
 			foreach (var queryOrder in orderColumns)
 			{
-				var column = columnMap.ContainsKey(queryOrder.ColumnPath)
-					? columnMap[queryOrder.ColumnPath]
-					: esq.AddColumn(queryOrder.ColumnPath);
+				EntitySchemaQueryColumn column;
+
+				// nested ternary operators are evil
+				if (columnMap.ContainsKey(queryOrder.ColumnPath))
+				{
+					column = columnMap[queryOrder.ColumnPath];
+				}
+				else
+				{
+					column = queryOrder.AggregationType.HasValue
+						? esq.AddColumn(esq.CreateAggregationFunction(queryOrder.AggregationType.Value, queryOrder.ColumnPath))
+						: esq.AddColumn(queryOrder.ColumnPath);
+				}
 
 				column.OrderDirection = queryOrder.Descending
 					? OrderDirection.Descending
@@ -200,45 +210,52 @@ namespace Creatio.Linq.QueryGeneration
 					}
 				}
 			}
+			
+			
 
 			foreach (var groupColumn in _queryParts.Groups)
 			{
+				// in some cases ColumnPath contains wrong ESQ column path
+				// because of re-linq tree visit rules. All cases are described:
+				Func<QuerySelectColumnData, bool> selector = (column) =>
+					// case:
+					// .GroupBy(item => new object[] { item.Column<int>("Column1"), item.Column<string>("Column2") })
+					// .Select(group => new { Column1 = group.Key[0], Column2 = group.Key[1] })
+					column.ColumnPath == QueryUtils.GetIndexMemberName(groupColumn.Position)
+					// case:
+					// .GroupBy(item => new { Column1 = item.Column<int>("Column1"), Column2 = item.Column<string>("Column2") })
+					// .Select(group => new { Alias1 = group.Key.Column1, Alias2 = group.Key.Column2 })
+					|| column.ColumnPath == QueryUtils.GetAliasMemberName(groupColumn.Alias)
+					// case:
+					// .GroupBy(item => item.Column<int>("Column1"))
+					// .Select(group => new { Alias1 = group.Key })
+					|| !column.AggregationType.HasValue && column.ColumnPath == QueryUtils.SingleGroupColumnAlias
+					// case (aggregate columns have no column path):
+					// .GroupBy(item => item.Column<int>("Column1"))
+					// .Select(group => new { Alias1 = group.Key, Count = group.Count() })
+					|| column.AggregationType.HasValue && string.IsNullOrEmpty(column.ColumnPath);
+					
+				// get select columns with incorrect column path
 				var selectKeyColumns = _queryParts.Select
-					.Where(column =>
-						// case:
-						// .GroupBy(item => new object[] { item.Column<int>("Column1"), item.Column<string>("Column2") })
-						// .Select(group => new { Column1 = group.Key[0], Column2 = group.Key[1] })
-						column.ColumnPath == QueryUtils.GetIndexMemberName(groupColumn.Position)
-						// case:
-						// .GroupBy(item => new { Column1 = item.Column<int>("Column1"), Column2 = item.Column<string>("Column2") })
-						// .Select(group => new { Alias1 = group.Key.Column1, Alias2 = group.Key.Column2 })
-						|| column.ColumnPath == QueryUtils.GetAliasMemberName(groupColumn.Alias)
-						// case:
-						// .GroupBy(item => item.Column<int>("Column1"))
-						// .Select(group => new { Alias1 = group.Key })
-						|| !column.AggregationType.HasValue && column.ColumnPath == QueryUtils.SingleGroupColumnAlias
-						// case (aggregate columns have no column path):
-						// .GroupBy(item => item.Column<int>("Column1"))
-						// .Select(group => new { Alias1 = group.Key, Count = group.Count() })
-						|| column.AggregationType.HasValue && string.IsNullOrEmpty(column.ColumnPath))
+					.Where(selector)
 					.ToArray();
 
-				// same cases as above, except order column should have name
+				// same for order columns
 				var orderKeyColumns = _queryParts.Orders
-					.Where(column =>
-						column.ColumnPath == QueryUtils.GetIndexMemberName(groupColumn.Position)
-						|| column.ColumnPath == QueryUtils.GetAliasMemberName(groupColumn.Alias)
-						|| column.ColumnPath == QueryUtils.SingleGroupColumnAlias)
+					.Where(selector)
 					.ToArray();
 
-				if (orderKeyColumns.Any())
-				{
-					orderKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
-				}
-				
+				// 1. if column is contained in both Select/OrderBy and GroupBy clause, then it will be added to ESQ
+				//    in Select/OrderBy block and should not be added again in GroupBy block.
+				// 2. if column is only contained in GroupBy clause, it will not be added in Select/OrderBy block
+				//    and query will be broken - so we need to add it in GroupBy block, hence yield return.
 				if (selectKeyColumns.Any())
 				{
 					selectKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
+				}
+				else if (orderKeyColumns.Any())
+				{
+					orderKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
 				}
 				else
 				{

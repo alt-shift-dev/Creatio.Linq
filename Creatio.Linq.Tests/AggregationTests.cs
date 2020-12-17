@@ -86,6 +86,7 @@ namespace Creatio.Linq.Tests
 					Max = group.Max(item => item.Column<int>("DurationInMinutes"))
 				})
 				.OrderBy(item => item.StartDate)
+				.ThenByDescending(item => item.Min)
 				.ToArray();
 			
 			Assert.AreEqual(2, durations.Length);

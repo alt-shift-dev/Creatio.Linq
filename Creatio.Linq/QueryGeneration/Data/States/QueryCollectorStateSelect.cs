@@ -50,12 +50,12 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 			throw new NotSupportedException($"For filtering use .Where() clause.");
 		}
 
-		private bool IsColumnDataDefined()
+		protected bool IsColumnDataDefined()
 		{
 			return _fragments.Any() || _aggregationType.HasValue;
 		}
 
-		private void AppendColumn()
+		protected void AppendColumn()
 		{
 			if (!IsColumnDataDefined())
 			{
@@ -66,7 +66,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 				? string.Join("->", _fragments)
 				: "";
 
-			Aggregator.AddSelect(new QuerySelectColumnData
+			StoreColumn(new QuerySelectColumnData
 			{
 				ColumnPath = columnPath,
 				AggregationType = _aggregationType,
@@ -74,6 +74,11 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 			_fragments.Clear();
 			_aggregationType = null;
+		}
+
+		protected virtual void StoreColumn(QuerySelectColumnData column)
+		{
+			Aggregator.AddSelect(column);
 		}
 
 		public override void Dispose()
