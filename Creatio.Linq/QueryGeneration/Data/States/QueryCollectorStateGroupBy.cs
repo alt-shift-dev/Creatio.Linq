@@ -24,6 +24,16 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 			_columns.Add(new QueryGroupColumnData(_columns.Count, columnPath));
 		}
 
+		public override void PushColumn()
+		{
+			// do nothing because complex columns in GroupBy clause are not possible
+		}
+
+		public override void PopColumn()
+		{
+			// same here
+		}
+
 		public override void SetColumnAlias(int position, string alias)
 		{
 			if (_columns.Count <= position || position < 0) 
