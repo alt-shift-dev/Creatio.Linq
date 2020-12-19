@@ -4,8 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using Creatio.Linq.QueryGeneration;
 using Creatio.Linq.QueryGeneration.Data;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using Remotion.Linq;
 using Terrasoft.Core;
 using Terrasoft.Core.DB;
@@ -25,7 +23,7 @@ namespace Creatio.Linq
 		/// Initializes new instance of <see cref="EntitySchemaQueryExecutor"/> class.
 		/// </summary>
 		/// <param name="userConnection">User connection to execute query.</param>
-		/// <param name="schemaName">Core entity schema.</param>
+		/// <param name="schemaName">Root entity schema.</param>
 		public EntitySchemaQueryExecutor(UserConnection userConnection, string schemaName)
 		{
 			_userConnection = userConnection ?? throw new ArgumentNullException(nameof(userConnection));
@@ -87,23 +85,6 @@ namespace Creatio.Linq
 				PageableConditionValues = new Dictionary<string, object>(),
 			};
 
-		}
-
-		private void LogAggregatedQueryParts(QueryPartCollector aggregator)
-		{
-			var serialized = JsonConvert.SerializeObject(
-				aggregator,
-				Formatting.Indented,
-				new JsonSerializerSettings
-				{
-					Converters =
-					{
-						new StringEnumConverter()
-					}
-				}
-			);
-
-			Trace.WriteLine($"Aggregated query:\r\n{serialized}\r\n");
 		}
 	}
 }

@@ -26,11 +26,10 @@ namespace Creatio.Linq
 
 		/// <summary>
 		/// Defines path to ESQ column.
-		/// Only use in LINQ expressions, returns empty value.
+		/// Only use in LINQ expressions, throws exception if executed.
 		/// </summary>
 		/// <typeparam name="T">Type of column value.</typeparam>
 		/// <param name="columnPath">ESQ expression for column path.</param>
-		/// <returns>default(T)</returns>
 		public T Column<T>(string columnPath)
 		{
 			throw new InvalidOperationException("Do not use this method except for defining LINQ queries.");

@@ -10,7 +10,6 @@ namespace Creatio.Linq
 		/// </summary>
 		/// <param name="userConnection">UserConnection instance.</param>
 		/// <param name="schemaName">Root schema name (i.e. "Contact").</param>
-		/// <returns></returns>
 		public static EntitySchemaQueryable<DynamicEntity> QuerySchema(this UserConnection userConnection, string schemaName)
 		{
 			if(null == userConnection) throw new ArgumentNullException(nameof(userConnection));

@@ -61,7 +61,7 @@ namespace Creatio.Linq.QueryGeneration.Data
 		/// <summary>
 		/// Whether query returns anonymous class with projection
 		/// </summary>
-		public bool UseResultProjection => _resultTypeConstructor != null;
+		public bool UseResultProjection => _resultTypeConstructor != null || SelectColumnsDefined;
 
 		/// <summary>
 		/// Whether any select columns were defined.

@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using Creatio.Linq.QueryGeneration.Data;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
 using Creatio.Linq.QueryGeneration.Util;
@@ -14,7 +11,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Terrasoft.Common;
 using Terrasoft.Core;
-using Terrasoft.Core.DB;
 using Terrasoft.Core.Entities;
 
 namespace Creatio.Linq.QueryGeneration
@@ -126,10 +122,14 @@ namespace Creatio.Linq.QueryGeneration
 
 					var columnName = column.Name;
 
+					// check if lookup field was requested
 					if (!string.IsNullOrEmpty(column.ValueExpression.Path) &&
 					    column.ValueExpression.Path != queryColumnData.ColumnPath)
 					{
-						columnName = column.ValueExpression.Path;
+						// by default ESQ loads two columns for lookup fields: Id and Name
+						// (more common: primary key column and primary display column).
+						// this is super-complicated logic to determine primary key column name
+						columnName += "Id";
 					}
 					
 					columnMap.Add(queryColumnData.GetColumnId(), column);
@@ -210,8 +210,6 @@ namespace Creatio.Linq.QueryGeneration
 					}
 				}
 			}
-			
-			
 
 			foreach (var groupColumn in _queryParts.Groups)
 			{
@@ -245,16 +243,13 @@ namespace Creatio.Linq.QueryGeneration
 					.Where(selector)
 					.ToArray();
 
-				// 1. if column is contained in both Select/OrderBy and GroupBy clause, then it will be added to ESQ
+				// 1. if column is contained in both Select/OrderBy AND GroupBy clause, then it will be added to ESQ
 				//    in Select/OrderBy block and should not be added again in GroupBy block.
 				// 2. if column is only contained in GroupBy clause, it will not be added in Select/OrderBy block
 				//    and query will be broken - so we need to add it in GroupBy block, hence yield return.
-				if (selectKeyColumns.Any())
+				if (selectKeyColumns.Any() || orderKeyColumns.Any())
 				{
 					selectKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
-				}
-				else if (orderKeyColumns.Any())
-				{
 					orderKeyColumns.ForEach(column => column.ColumnPath = groupColumn.ColumnPath);
 				}
 				else
@@ -319,13 +314,13 @@ namespace Creatio.Linq.QueryGeneration
 			if(null == esq) throw new ArgumentNullException(nameof(esq));
 			if(null == filter) throw new ArgumentNullException(nameof(filter));
 
-			if (filter.Value.GetType().IsArray)
+			if (null != filter.Value && filter.Value.GetType().IsArray)
 			{
 				var enumerable = (IEnumerable)filter.Value;
 				return esq.CreateFilterWithParameters(filter.ComparisonType, filter.ColumnPath,
 					enumerable.Cast<object>());
 			}
-
+			
 			return esq.CreateFilterWithParameters(filter.ComparisonType, filter.ColumnPath, filter.Value);
 		}
 
@@ -340,8 +335,22 @@ namespace Creatio.Linq.QueryGeneration
 				return entity => entity.GetColumnValue(selectColumns.First().Name);
 			}
 			
-			// no aggregation & no projection means we should return same entity
-			if (null == projectionConstructor) return entity => entity;
+			// no aggregation & no projection 
+			if (null == projectionConstructor)
+			{
+				// no columns - return same entity
+				if (selectColumns.Length == 0)
+				{
+					return entity => entity;
+				}
+
+				if (selectColumns.Length == 1)
+				{
+					return entity => entity.GetColumnValue(selectColumns.First().Name);
+				}
+
+				throw new InvalidOperationException($"If you want to select more than 1 column you should use projections.");
+			}
 			
 			// but if projection was defined select columns are mandatory
 			if (null == selectColumns) throw new ArgumentNullException(nameof(selectColumns));

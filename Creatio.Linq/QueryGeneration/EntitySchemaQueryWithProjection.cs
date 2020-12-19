@@ -50,8 +50,8 @@ namespace Creatio.Linq.QueryGeneration
 		/// <returns>Filled result entity.</returns>
 		public TResult Project<TResult>(Entity entity)
 		{
-			if (null == entity) throw new ArgumentNullException(nameof(entity));
-			if (null == _resultProjector) throw new InvalidOperationException("Entity result projection is not defined.");
+			_ = entity ?? throw new ArgumentNullException(nameof(entity));
+			_ = _resultProjector ?? throw new InvalidOperationException("Call SetResultProjector() prior to using projections.");
 
 			if (typeof(TResult) == typeof(DynamicEntity))
 			{

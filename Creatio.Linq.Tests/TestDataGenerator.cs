@@ -10,6 +10,8 @@ namespace Creatio.Linq.Tests
 	{
 		public static void GenerateAccounts(UserConnection userConnection)
 		{
+			_ = userConnection ?? throw new ArgumentNullException(nameof(userConnection));
+			
 			var customerA = userConnection
 				.CreateEntity("Account", new
 				{
@@ -60,6 +62,8 @@ namespace Creatio.Linq.Tests
 
 		public static void GenerateActivities(UserConnection userConnection)
 		{
+			_ = userConnection ?? throw new ArgumentNullException(nameof(userConnection));
+			
 			// duration: 1 day, start today
 			userConnection.CreateEntity("Activity", new
 			{
@@ -95,8 +99,6 @@ namespace Creatio.Linq.Tests
 				DueDate = DateTime.Today,
 				DetailedResult = "$UnitTest$",
 			});
-
-			
 		}
 	}
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Configuration;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Norbit.TRS;
@@ -66,7 +67,7 @@ namespace Creatio.Linq.Tests
 		}
 
 		[TestMethod]
-		public void ShouldSortByAnonymousClassFields()
+		public void ShouldFilterByAnonymousClassFields()
 		{
 			// same as above but first select required columns to anonymous
 			// class and then apply filtering to its columns.
@@ -93,6 +94,27 @@ namespace Creatio.Linq.Tests
 			Assert.AreEqual(Consts.Account.Category.A, account.AccountCategoryId);
 			Assert.IsNotNull(account.TypeName);
 			Assert.IsNotNull(account.CountryName);
+		}
+
+		[TestMethod]
+		public void ShouldAddLinkedEntityFields()
+		{
+			var account = UserConnection
+				.QuerySchema("Account")
+				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
+				.Select(item => new
+				{
+					Name = item.Column<string>("Name"),
+					CommunicationTypeValue = item.Column<string>("[AccountCommunication:Account:Id].Number"),
+					CommunicationTypeId = item.Column<Guid>("[AccountCommunication:Account:Id].CommunicationType")
+				})
+				.Where(item => 
+					item.CommunicationTypeValue != null
+					&& item.CommunicationTypeId == Consts.CommunicationType.PrimaryPhone
+				)
+				.ToArray();
+			
+			Assert.AreEqual(1, account.Length);
 		}
 	}
 }
