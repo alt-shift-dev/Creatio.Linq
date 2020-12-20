@@ -72,8 +72,10 @@ var activityQueryable = UserConnection
 // на данном шаге никакой запрос не уйдет в БД, потому что не было попытки получить доступ к результату.
 // activityQueryable - просто некий IQueryable<DymaicEntity> который можно обвешивать еще фильтрами.
 
+// ниже способы как все-таки отправить запросы в БД:
+
 // например, можно посчитать количество:
-var pendingActivities = activityQueryable.Count();                  // получить результат агрегации - уходи в БД
+var pendingActivities = activityQueryable.Count();                  // получить результат агрегации
 
 // или выбрать последние 10 штук по дате создания:
 var latestTen = activityQueryable
