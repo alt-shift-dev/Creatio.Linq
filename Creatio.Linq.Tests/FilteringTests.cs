@@ -149,6 +149,18 @@ namespace Creatio.Linq.Tests
 			Assert.IsTrue(activeUsersCount > 0);
 		}
 
+
+		[TestMethod]
+		public void ShouldFilterByNegativeBoolFieldsWithoutComparison()
+		{
+			var activeUsersCount = UserConnection
+				.QuerySchema("SysAdminUnit", LogOptions.ToTracePerformanceOnly)
+				.Count(item => !(item.Column<bool>("Active")));
+
+			// All employees group is turned off by default out-of-box
+			Assert.IsTrue(activeUsersCount == 1);
+		}
+
 		[TestMethod]
 		public void ShouldFilterByValueSet()
 		{

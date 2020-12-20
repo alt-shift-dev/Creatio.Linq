@@ -43,7 +43,7 @@ namespace Creatio.Linq
 		/// Called when new log item is about to be written.
 		/// </summary>
 		public Action<string> LogAction { get; set; }
-
+		
 		/// <summary>
 		/// Creates default <see cref="LogOptions"/> which dumps everything to standard trace.
 		/// </summary>
@@ -79,5 +79,17 @@ namespace Creatio.Linq
 			{
 				LogAction = message => { }
 			};
+
+		/// <summary>
+		/// Creates default <see cref="LogOptions"/> instance with all loggers enabled and custom log action.
+		/// </summary>
+		/// <param name="logAction">Method which is called each time a log entry is passed.</param>
+		public static LogOptions ToAnywhere(Action<string> logAction)
+		{
+			var options = ToTrace;
+			options.LogAction = logAction;
+
+			return options;
+		}
 	}
 }

@@ -151,12 +151,7 @@ namespace Creatio.Linq.QueryGeneration
 			{
 				EntitySchemaQueryColumn column;
 
-				// nested ternary operators are evil
-				if (columnMap.ContainsKey(queryOrder.ColumnPath))
-				{
-					column = columnMap[queryOrder.ColumnPath];
-				}
-				else
+				if (!columnMap.TryGetValue(queryOrder.GetColumnId(), out column))
 				{
 					column = queryOrder.AggregationType.HasValue
 						? esq.AddColumn(esq.CreateAggregationFunction(queryOrder.AggregationType.Value, queryOrder.ColumnPath))

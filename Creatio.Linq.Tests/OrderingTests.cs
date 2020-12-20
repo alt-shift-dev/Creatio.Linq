@@ -117,5 +117,25 @@ namespace Creatio.Linq.Tests
 			});
 		}
 
+		[TestMethod]
+		public void ShouldOrderByAggregatedFields()
+		{
+			var mostActivitiesOnDate = UserConnection
+				.QuerySchema("Activity", LogOptions.ToTrace)
+				.GroupBy(item => item.Column<DateTime>("StartDate"))
+				.Select(group => new
+				{
+					StartDate = group.Key,
+					Count = group.Count(),
+				})
+				.OrderByDescending(result => result.Count)
+				//.First();	// there is a bug in ESQ generation currently, it generates incorrect filtering with aggregated columns if paging enabled
+				.ToArray()	// execute query
+				.First();	// use linq-to-objects to get first item.
+			
+			Assert.IsNotNull(mostActivitiesOnDate);
+			
+		}
+
 	}
 }
