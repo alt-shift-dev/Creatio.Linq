@@ -5,7 +5,7 @@
 ## Установка
 Тут два варианта:  
 1. вы разарабатываете серверный код в студии. В этом случае библиотека устанавливается через nuget,
-далее самостоятельно добавляете сборку в Assemblies своего пакета.
+далее самостоятельно добавляете сборку Creatio.Linq.dll в Assemblies своего пакета.
 2. просто ставите в систему пакет CreatioLinq и начинаете использовать Linq для ESQ-запросов 
 (вариант для нескольких команд разработки - чтобы не было дублей сборки в разных пакетах).
 
@@ -19,9 +19,9 @@ Install-Package Creatio.Linq
 Зайти на страничку [Releases](https://github.com/alt-shift-dev/Creatio.Linq/releases) и скачать последнюю версию.
 
 ## Использование
-Для начала использования достаточно подключить пространство имен Creatio.Linq и воспользоваться методом-расширением QuerySchema,
+Для начала использования достаточно подключить пространства имен Creatio.Linq и System.Linq и воспользоваться методом-расширением QuerySchema,
 после чего можно пользоваться стандартными Linq-методами Select, Where, OrderBy и так далее:
-```
+```csharp
 using Creatio.Linq;
 ///...
 
@@ -39,7 +39,7 @@ public int GetContactsCount()
 пробрасывается класс [DynamicEntity](https://github.com/alt-shift-dev/Creatio.Linq/blob/main/Creatio.Linq/DynamicEntity.cs), 
 являющийся наследником Entity с единственным методом-расширением ```Column<TValue>("Column.Path.Expression")```, которое и нужно использовать для обращения к колонкам 
 . Пример:
-```
+```csharp
 var supervisor = UserConnection
     .QuerySchema("Contact")
     .Where(item => item.Column<string>("Name") == "Supervisor")
@@ -47,40 +47,39 @@ var supervisor = UserConnection
 ```
 
 Разумеется, можно использовать не только название одного поля схемы, но и любые конструкции, которые допускает ESQ:
-```
+```csharp
 var supervisorContact = UserConnection
     .QuerySchema("Contact")
-    .Where(item => item.Column<string>("[ContatCommunication:Contact:Id].Number") == "79001234567")
+    .Where(item => item.Column<string>("[ContactCommunication:Contact:Id].Number") == "79001234567")
     .ToArray();
 ```
 
 ## Выполнение запроса
-Для тех, кто не очень хорошо понимает, как работает Linq сейчас будет важный нюанс. Это относится к любому Linq-выражению, 
+Для тех, кто не очень хорошо понимает, как работает Linq, сейчас будет важный нюанс. Это относится к любому Linq-выражению, 
 не только к данному провайдеру.  
 Так вот, Linq-выражения ленивые, прямо как ты. А значит это одну простую штуку: Linq-запрос не будет выполняться,
 пока не будет попытки обратиться к его результату.  
 Сделать это можно двумя способами: 
 1. Вызвав агрегирующую функцию после выражения, если интересует скалярный результат.
-2. Вызвав метод ToArray()/ToList()/First()/Single(), если нужен массив записей.
+2. Вызвав метод ToArray()/ToList()/First()/Single(), если нужны объекты.
 
 Пример:
-```
+```csharp
 var activityQueryable = UserConnection
     .QuerySchema("Activity")
     .Where(item => item.Column("EndDate") > DateTime.Now);
 
-// в данном случае никакой запрос не уйдет в БД, потому что не было попытки получить доступ к результату.
+// на данном шаге никакой запрос не уйдет в БД, потому что не было попытки получить доступ к результату.
 // activityQueryable - просто некий IQueryable<DymaicEntity> который можно обвешивать еще фильтрами.
 
 // например, можно посчитать количество:
-var pendingActivities = activityQueryable.Count();                  // запрос уходит в БД, т.к. есть попытка получить результат
+var pendingActivities = activityQueryable.Count();                  // получить результат агрегации - уходи в БД
 
 // или выбрать последние 10 штук по дате создания:
 var latestTen = activityQueryable
     .OrderByDescending(item => item.Column<DateTime>("CreatedOn"))  // запрос все еще не выполнился
     .Take(10)                                                       // и тут тоже
     .ToArray();                                                     // а вот в этом месте он уходит в БД
-
 ```
 
 Короче, я предупредил, если будете в issue писать, что ничего не работает, я буду инкрементить счетчик тех, кто не умеет читать.
@@ -88,7 +87,7 @@ var latestTen = activityQueryable
 ## Проекции
 Когда нужно получить не все поля объекта, а только некоторые, нужно использовать т.н. проекции, для чего в Linq есть метод Select:
 
-```
+```csharp
 var activeUsers = UserConnection
     .QuerySchema("SysAdminUnit")
     .Where(item => item.Column<bool>("Active") 
@@ -113,7 +112,7 @@ Assert.IsNotNull(activeUsers.First().Name)
 обращайтесь к идентификатору явно: ```item.Column<Guid>("Contact.Id")``` или как там у вас идентификатор зовется.
 
 Можно получать значение одного поля без анонимных классов:
-```
+```csharp
 var activeUserIds = UserConnection
     .QuerySchema("SysAdminUnit")
     .Where(item => item.Column<bool>("Active") 
@@ -122,10 +121,9 @@ var activeUserIds = UserConnection
     .ToArray();
 
 // activeUserIds - теперь просто Guid[] с идентификаторами.
-
 ```
 
-А что же тогда будет если не использовать метод Select()? В этом случае перед отправкой запроса 
+Что будет если не использовать метод Select()? В этом случае перед отправкой запроса 
 будет вызван метод AddAllSchemaColumns() и обращаться к ним надо как к обычным полям Entity 
 через GetColumnValue()/GetTypedColumnValue(). Примера не будет, мне лень.
 
@@ -134,7 +132,7 @@ var activeUserIds = UserConnection
 Простейшие примеры уже были выше, на всякий случай повторим:
 
 #### Фильтр Null/NotNull
-```
+```csharp
 // select * from Contact where AccountId is null
 UserConnection
     .QuerySchema("Contact")
@@ -152,11 +150,10 @@ UserConnection
     .QuerySchema("Contact")
     .Where(item => !(item.Column<Guid>("Account") == null))
     .ToArray();
-
 ```
 
 #### Фильтры LIKE для строк:
-```
+```csharp
 // select * from SysAdminUnit where Name like 'Super%'
 UserConnection
     .QuerySchema("SysAdminUnit")
@@ -166,7 +163,7 @@ UserConnection
 // select * from SysAdminUnit where Name like '%visor'
 UserConnection
     .QuerySchema("SysAdminUnit")
-    .Where(item => item.Column<string>("Name").EndsWith("Super"))
+    .Where(item => item.Column<string>("Name").EndsWith("visor"))
     .ToArray();
 
 // select * from SysAdminUnit where Name like '%Rumpelstilzchen%'
@@ -174,11 +171,10 @@ UserConnection
     .QuerySchema("SysAdminUnit")
     .Where(item => item.Column<string>("Name").Contains("Rumpelstilzchen"))
     .ToArray();
-
 ```
 
 #### Фильтр по множеству значений:
-```
+```csharp
 // select * from SysAdminUnit where SysAdminUnitTypeValue in (0,6)
 UserConnection
     .QuerySchema("SysAdminUnit")
@@ -198,11 +194,10 @@ UserConnection
     .QuerySchema("SysAdminUnit")
     .Where(item => roleTypes.Contains(item.Column<string>("SysAdminUnitTypeValue")))
     .ToArray();
-
 ```
 
 #### Фильтр по логическому полю:
-```
+```csharp
 // select * from SysAdminUnit where Active = 1
 UserConnection
     .QuerySchema("SysAdminUnit")
@@ -219,7 +214,7 @@ UserConnection
 ### Комбинирование логических выражений 
 Можно пользоваться стандартными логическими операторами и скобками для расставления приоритетов:
 
-```
+```csharp
 UserConnecttion
     .QuerySchema("Contact")
     .Where(item => item.Column<bool>("[SysAdminUnit:Contact:Id].Active") 
@@ -240,7 +235,7 @@ UserConnecttion
 ### Если вы большой оригинал
 и любите записывать условия в обратном виде, например, ```if(null == someValue){}``` то можете продолжать так писать
 в фильтрах Where, будет работать:
-```
+```csharp
 var portalUsers = UserConnection
     .QuerySchema("SysAdminUnit")
     // ничего не имею против, но ты же помнишь про magic numbers?
@@ -256,7 +251,7 @@ var portalUsers = UserConnection
 3. Чистить зубы надо утром и вечером.
 
 Пример:
-```
+```csharp
 UserConnection
     .QuerySchema("Contact")
     .Select(item => new
@@ -266,7 +261,7 @@ UserConnection
         UserId = item.Column<string>("[SysAdminUnit:Contact:Id].Id"),
         UserIsActive = item.Column<bool>("[SysAdminUnit:Contact:Id].Active"),
     })
-    // здесь уже не Entity а анонимный класс
+    // здесь уже не DynamicEntity а анонимный класс
     .Where(contact => contact.TypeId != Consts.Contact.Type.ContactPerson)
     .ToArray();
 ```
@@ -280,7 +275,7 @@ UserConnection
 - Sum
 
 В Linq для них есть одноименные методы. Например, найти дату создания самой первой активности можно так:
-```
+```csharp
 var oldestActivityDate = UserConnection
     .QuerySchema("Activity")
     .Min(item => item.Column<DateTime>("CreatedOn"))
@@ -288,7 +283,7 @@ var oldestActivityDate = UserConnection
 А вот применить функции Average и Sum к полю с типом DateTime не получится, се ля ви.
 
 Поле группировки добавляется в методе GroupBy, доступ к нему в блоке Select через свойство Key:
-```
+```csharp
 var contactsByAccounts = UserConnection
 	.QuerySchema("Contact", LogOptions.ToTrace)
 	.GroupBy(item => item.Column<Guid>("Account"))
@@ -303,7 +298,7 @@ var contactsByAccounts = UserConnection
 так что лучше строить путь до нужного идентификатора.
 
 Можно группировать по нескольким полям сразу:
-```
+```csharp
 var leadStats = UserConnection
     .QuerySchema("Lead")
     .GroupBy(item => new 
@@ -321,7 +316,7 @@ var leadStats = UserConnection
 ```
 
 Агрегатных полей может быть и несколько за раз:
-```
+```csharp
 var leadStats = UserConnection
     .QuerySchema("Lead")
     .GroupBy(item => new 
@@ -341,7 +336,7 @@ var leadStats = UserConnection
 ## Сортировка
 Тут все просто: используются методы OrderyBy/OrderByDescending для первого поля, ThenBy/ThenByDescending для последующих.  
 По агрегатным полям тоже можно сортировать:
-```
+```csharp
 var mostActivitiesOnDate = UserConnection
     .QuerySchema("Activity", LogOptions.ToTrace)
     .GroupBy(item => item.Column<DateTime>("StartDate"))
@@ -352,7 +347,7 @@ var mostActivitiesOnDate = UserConnection
     })
     .OrderByDescending(result => result.Count)
     .ThenBy(result => result.StartDate)
-    .ToArray()	;
+    .ToArray();
 ```
 
 Кстати, на данный момент в ESQ есть баг, который можно выбить следующим кейсом:
@@ -361,7 +356,7 @@ var mostActivitiesOnDate = UserConnection
 - Включить пейджинг
 
 ESQ в таком случае генерит некорректный SQL-запрос. Пример Linq-запроса, который падает:
-```
+```csharp
  var mostActivitiesOnDate = UserConnection
     .QuerySchema("Activity", LogOptions.ToTrace)
     .GroupBy(item => item.Column<DateTime>("StartDate"))
@@ -378,7 +373,7 @@ ESQ в таком случае генерит некорректный SQL-за�
 В Linq есть явные способы задать пейджинг (Skip/Take) и неявные (First).  
 Рассказывать про них особо нечего (кроме всем известного факта что при задании параметров
 пейджинга и отсутствии поля сортировки ESQ сам добавит сортировку по Id), на всякий случай пример:
-```
+```csharp
 var secondAndThirdActivities = UserConnection
     .QuerySchema("Activity")
     .OrderBy(item => item.Column<DateTime>("CreatedOn"))
@@ -391,7 +386,7 @@ var secondAndThirdActivities = UserConnection
 ## Неподдерживаемые функции
 1. На данный момент не поддерживаются подзапросы, для этого придется конструировать ESQ вручную.  
 2. Join'ов нет, но зачем они, когда есть column path expressions?  
-3. Макросы не поддерживаются.  
+3. Макросов нет.  
 4. Не поддерживаются методы Linq: Last(), LastOrDefault().
 
 Если найдете что-то еще - дайте знать, внесу в список.
@@ -399,16 +394,17 @@ var secondAndThirdActivities = UserConnection
 
 ## Отладка
 Если обнаружите баг и захотите его зарепортить, помимо Linq-выражения надо будет приложить отладочные логи.  
-Чтобы собрать логи достаточно передать экземляр класса [LogOptions](https://github.com/alt-shift-dev/Creatio.Linq/blob/main/Creatio.Linq/LogOptions.cs).
+Чтобы собрать логи достаточно передать экземляр класса [LogOptions](https://github.com/alt-shift-dev/Creatio.Linq/blob/main/Creatio.Linq/LogOptions.cs)
+в метод QuerySchema().
 Самый простой вариант - если есть возможность собрать логи из стандартного Trace Output (например, из unit-теста):
-```
+```csharp
 UserConnaction
     .QuerySchema("Contact", LogOptions.ToTrace)
     .Count();
 ```
 
 Или можно собирать все в StringBuilder, например так:
-```
+```csharp
 var logBuilder = new StringBuilder();
 
 UserConnection

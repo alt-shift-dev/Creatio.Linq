@@ -25,7 +25,7 @@ namespace Creatio.Linq
 		{
 		}
 
-		#region Public methods & properties
+		#region Public methods
 
 		/// <summary>
 		/// Defines path to ESQ column.
