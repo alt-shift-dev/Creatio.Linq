@@ -3,6 +3,10 @@
 Проект добавляет немного Linq в ваш ESQ.  
 Для разбора дерева выражений Linq используется библиотека [re-linq](https://github.com/re-motion/Relinq).
 
+## Поддержка Creatio
+Проверялось на версии 7.15.2, с более свежими проблем быть не должно.  
+А вот под более древние версии придется собирать самостоятельно.
+
 ## Установка
 Тут два варианта:  
 1. вы разарабатываете серверный код в студии. В этом случае библиотека устанавливается через nuget,
@@ -401,7 +405,7 @@ var secondAndThirdActivities = UserConnection
 в метод QuerySchema().
 Самый простой вариант - если есть возможность собрать логи из стандартного Trace Output (например, из unit-теста):
 ```csharp
-UserConnaction
+UserConnection
     .QuerySchema("Contact", LogOptions.ToTrace)
     .Count();
 ```
@@ -427,7 +431,7 @@ UserConnection
 *** Query execution time: 42 ms.
 ```
 
-**Повторные запуски**
+**Повторные запуски** (любой Linq-запрос)
 ```
 *** LINQ parsing time: 0 ms.
 *** ESQ generation time: 0 ms.
