@@ -12,7 +12,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 	{
 		public QueryCollectorStateAggregation(QueryPartCollector aggregator) : base(aggregator)
 		{
-			Trace.WriteLine("QueryCollectorStateAggregation::ctor");
+			LogWriter.WriteLine("QueryCollectorStateAggregation::ctor");
 		}
 
 		public override void SetFunction(string methodName, object value)
@@ -24,7 +24,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public override void Dispose()
 		{
-			Trace.WriteLine("QueryCollectorStateAggregation::Dispose()");
+			LogWriter.WriteLine("QueryCollectorStateAggregation::Dispose()");
 		}
 	}
 }

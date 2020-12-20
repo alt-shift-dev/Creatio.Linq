@@ -16,9 +16,14 @@ namespace Creatio.Linq
 		{
 		}
 
-		private static IQueryExecutor CreateExecutor(UserConnection userConnection, string schemaName)
+		public EntitySchemaQueryable(UserConnection userConnection, string schemaName, LogOptions logOptions)
+			: base(QueryParser.CreateDefault(), CreateExecutor(userConnection, schemaName, logOptions))
 		{
-			return new EntitySchemaQueryExecutor(userConnection, schemaName);
+		}
+
+		private static IQueryExecutor CreateExecutor(UserConnection userConnection, string schemaName, LogOptions logOptions = null)
+		{
+			return new EntitySchemaQueryExecutor(userConnection, schemaName, logOptions);
 		}
 
 		// This constructor is called indirectly by LINQ's query methods, just pass to base.

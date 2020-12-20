@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Creatio.Linq.QueryGeneration;
 using Creatio.Linq.QueryGeneration.Data;
+using Creatio.Linq.QueryGeneration.Util;
 using Remotion.Linq;
 using Terrasoft.Core;
 using Terrasoft.Core.DB;
@@ -18,16 +19,18 @@ namespace Creatio.Linq
 	{
 		private UserConnection _userConnection;
 		private readonly string _schemaName;
+		private readonly LogOptions _logOptions;
 
 		/// <summary>
 		/// Initializes new instance of <see cref="EntitySchemaQueryExecutor"/> class.
 		/// </summary>
 		/// <param name="userConnection">User connection to execute query.</param>
 		/// <param name="schemaName">Root entity schema.</param>
-		public EntitySchemaQueryExecutor(UserConnection userConnection, string schemaName)
+		public EntitySchemaQueryExecutor(UserConnection userConnection, string schemaName, LogOptions logOptions)
 		{
 			_userConnection = userConnection ?? throw new ArgumentNullException(nameof(userConnection));
 			_schemaName = schemaName ?? throw new ArgumentNullException(nameof(schemaName));
+			_logOptions = logOptions ?? LogOptions.None;
 		}
 
 		/// <inheritdoc />
@@ -47,19 +50,37 @@ namespace Creatio.Linq
 		/// <inheritdoc />
 		public IEnumerable<TResult> ExecuteCollection<TResult>(QueryModel queryModel)
 		{
-			var queryData = EntitySchemaQueryExpressionModelVisitor.GenerateEntitySchemaQueryData(queryModel);
-			var esq = queryData.CreateQuery(_userConnection, _schemaName);
-			var esqOptions = GetQueryOptions(esq, queryData);
+			using (LogState.BeginSession(_logOptions))
+			{
+				LogState.BeginOperation(QueryProcessOperation.LinqParse);
+				
+				var queryData = EntitySchemaQueryExpressionModelVisitor.GenerateEntitySchemaQueryData(queryModel);
+				
+				LogState.BeginOperation(QueryProcessOperation.EsqGeneration);
+				
+				var esq = queryData.CreateQuery(_userConnection, _schemaName);
+				var esqOptions = GetQueryOptions(esq, queryData);
+				
+				LogState.EndOperation();
 
-			Trace.WriteLine(esq.GetSelectQuery(_userConnection).GetSqlText());
+				if (_logOptions.LogSqlQuery)
+				{
+					LogWriter.WriteLine(esq.GetSelectQuery(_userConnection).GetSqlText());
+				}
+				
+				LogState.BeginOperation(QueryProcessOperation.Executing);
 
-			var entityCollection = null == esqOptions
-				? esq.GetEntityCollection(_userConnection)
-				: esq.GetEntityCollection(_userConnection, esqOptions);
+				var entityCollection = null == esqOptions
+					? esq.GetEntityCollection(_userConnection)
+					: esq.GetEntityCollection(_userConnection, esqOptions);
 
-			_userConnection = null;
+				_userConnection = null;
+				
+				LogState.EndOperation();
 
-			return entityCollection.Select(item => esq.Project<TResult>(item));
+				return entityCollection.Select(item => esq.Project<TResult>(item));
+			}
+
 		}
 
 		private static EntitySchemaQueryOptions GetQueryOptions(EntitySchemaQuery esq, QueryData queryData)

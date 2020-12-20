@@ -20,7 +20,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCalculateCountWithoutColumnName()
 		{
 			var accountCount = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.Count();
 			
@@ -31,7 +31,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCalculateCountWithInnerFilter()
 		{
 			var accountCount = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Count(item => item.Column<string>("Notes") == "$UnitTest$");
 
 			Assert.AreEqual(3, accountCount);
@@ -41,7 +41,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCalculateMinDuration()
 		{
 			var minDuration = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.Min(item => item.Column<int>("DurationInMinutes"));
 			
@@ -52,7 +52,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCalculateMaxDuration()
 		{
 			var maxDuration = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.Max(item => item.Column<int>("DurationInMinutes"));
 
@@ -63,7 +63,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCalculateAvgDuration()
 		{
 			var maxDuration = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.Average(item => item.Column<decimal>("DurationInMinutes"));
 
@@ -74,7 +74,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldApplyAggregationWithGrouping()
 		{
 			var durations = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.GroupBy(item => item.Column<DateTime>("StartDate"))
 				.Select(group => new

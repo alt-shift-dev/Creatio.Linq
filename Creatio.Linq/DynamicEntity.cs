@@ -10,14 +10,17 @@ namespace Creatio.Linq
 	/// </summary>
 	public class DynamicEntity: Entity
 	{
+		/// <inheritdoc />
 		public DynamicEntity(UserConnection userConnection) : base(userConnection)
 		{
 		}
 
+		/// <inheritdoc />
 		public DynamicEntity(UserConnection userConnection, Guid schemaUId) : base(userConnection, schemaUId)
 		{
 		}
 
+		/// <inheritdoc />
 		public DynamicEntity(Entity source) : base(source)
 		{
 		}

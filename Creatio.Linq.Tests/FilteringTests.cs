@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Castle.DynamicProxy.Generators;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Norbit.TRS;
 
@@ -17,10 +16,35 @@ namespace Creatio.Linq.Tests
 		}
 
 		[TestMethod]
+		public void ShouldApplyPaging()
+		{
+			var skip = 0;
+
+			while (true)
+			{
+				var activities = UserConnection
+					.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
+					.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
+					.Skip(skip)
+					.Take(1)
+					.ToArray();
+
+				Assert.IsTrue(activities.Length <= 1);
+				if (activities.Length == 0)
+					break;
+
+				skip++;
+			}
+			
+			// 3 activities total
+			Assert.AreEqual(3, skip);
+		}
+
+		[TestMethod]
 		public void ShouldApplySimpleEqualsFilter()
 		{
 			var accounts = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.ToArray();
 			
@@ -32,7 +56,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldCombineFiltersWithLogicalOperations()
 		{
 			var accounts = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<string>("Name") == "CustomerA"
@@ -47,7 +71,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldApplyNullNotNullFilter()
 		{
 			var accounts = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<Guid>("Type") != null)
@@ -63,19 +87,33 @@ namespace Creatio.Linq.Tests
 			Assert.AreEqual(3, accounts.Length);
 			Assert.AreEqual(0, empty.Length);
 		}
+		
+		[TestMethod]
+		public void ShouldDealWithAlternativelyGiftedProgrammers()
+		{
+			// comparison operands are reversed
+			var accounts = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
+				.Where(item =>
+						"$UnitTest$" == item.Column<string>("Notes")
+						&& null != item.Column<Guid>("Type") )
+				.ToArray();
+			
+			Assert.AreEqual(3, accounts.Length);
+		}
 
 		[TestMethod]
 		public void ShouldApplyStartsWithEndsWithFilter()
 		{
 			var accounts = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<string>("Name").StartsWith("Partner"))
 				.ToArray();
 
 			var customerA = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<string>("Name").EndsWith("A"))
@@ -90,7 +128,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldFilterByLinkedEntities()
 		{
 			var accounts = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<string>("[AccountCommunication:Account:Id].Number") == "79001234567")
@@ -105,7 +143,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldFilterByBoolFieldsWithoutComparison()
 		{
 			var activeUsersCount = UserConnection
-				.QuerySchema("SysAdminUnit")
+				.QuerySchema("SysAdminUnit", LogOptions.ToTracePerformanceOnly)
 				.Count(item => item.Column<bool>("Active"));
 			
 			Assert.IsTrue(activeUsersCount > 0);
@@ -122,7 +160,7 @@ namespace Creatio.Linq.Tests
 
 			// pre-populated set
 			var users = UserConnection
-				.QuerySchema("SysAdminUnit")
+				.QuerySchema("SysAdminUnit", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					userTypes.Contains(item.Column<int>("SysAdminUnitTypeValue"))
 					&& item.Column<bool>("Active"))
@@ -146,7 +184,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldAllowSimpleExpressionsInFilters()
 		{
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => 
 					item.Column<DateTime>("StartDate") > DateTime.Today - TimeSpan.FromDays(5)
 					&& item.Column<Guid>("Status") == Consts.Activity.Status.Completed
@@ -160,7 +198,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldInvertFilter()
 		{
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.Where(item => !(
 					item.Column<Guid>("Type") == Consts.Activity.Type.Email

@@ -19,7 +19,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public QueryCollectorStateSelect(QueryPartCollector aggregator) : base(aggregator)
 		{
-			Trace.WriteLine("Entering Select state.");
+			LogWriter.WriteLine("Entering Select state.");
 		}
 
 		public override void SetColumn(string columnPath)
@@ -85,7 +85,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		{
 			AppendColumn();
 
-			Trace.WriteLine("Disposing Select state.");
+			LogWriter.WriteLine("Disposing Select state.");
 		}
 	}
 }

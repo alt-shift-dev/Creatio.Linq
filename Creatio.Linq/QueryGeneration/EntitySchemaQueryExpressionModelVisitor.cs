@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using Creatio.Linq.QueryGeneration.Data;
 using Creatio.Linq.QueryGeneration.Data.States;
+using Creatio.Linq.QueryGeneration.Util;
 using Remotion.Linq;
 using Remotion.Linq.Clauses;
 using Remotion.Linq.Clauses.Expressions;
@@ -18,49 +19,63 @@ namespace Creatio.Linq.QueryGeneration
 	/// </summary>
 	internal class EntitySchemaQueryExpressionModelVisitor: QueryModelVisitorBase
 	{
-		private readonly QueryPartCollector _aggregator;
+		// hello, you owe me columns
+		private readonly QueryPartCollector _collector;
 		private readonly QueryCollectorState _state;
 
+		/// <summary>
+		/// Parses LINQ query and collects query parts to <see cref="QueryModel"/>.
+		/// </summary>
 		public static QueryData GenerateEntitySchemaQueryData(QueryModel queryModel)
 		{
+			_ = queryModel ?? throw new ArgumentNullException(nameof(queryModel));
+			
 			var visitor = new EntitySchemaQueryExpressionModelVisitor();
 			visitor.VisitQueryModel(queryModel);
 			return visitor.GetEntitySchemaQueryData();
 		}
 
-		public EntitySchemaQueryExpressionModelVisitor()
+		/// <summary>
+		/// Initializes new instance of <see cref="EntitySchemaQueryExpressionModelVisitor"/> class.
+		/// </summary>
+		private EntitySchemaQueryExpressionModelVisitor()
 		{
-			_aggregator = new QueryPartCollector();
-			_state = new QueryCollectorState(_aggregator);
+			_collector = new QueryPartCollector();
+			_state = new QueryCollectorState(_collector);
 		}
 
+		/// <summary>
+		/// Get collected query parts.
+		/// </summary>
 		public QueryData GetEntitySchemaQueryData()
 		{
 			_state.Dispose();
-			return new QueryData(_aggregator);
+			return new QueryData(_collector);
 		}
 
+		/// <inheritdoc />
 		protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
 		{
-			Trace.WriteLine($"VisitBodyClauses");
+			LogWriter.WriteLine($"VisitBodyClauses");
 			base.VisitBodyClauses(bodyClauses, queryModel);
 		}
 
+		/// <inheritdoc />
 		public override void VisitResultOperator(ResultOperatorBase resultOperator, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitResultOperator: {resultOperator}, type {resultOperator.GetType().Name}");
+			LogWriter.WriteLine($"VisitResultOperator: {resultOperator}, type {resultOperator.GetType().Name}");
 
 			switch (resultOperator)
 			{
 				// First()
 				case FirstResultOperator _:
-					_aggregator.Take = 1;
+					_collector.Take = 1;
 					break;
 
 				// Count()
 				case CountResultOperator _:
 				case LongCountResultOperator _:
-					_aggregator.SetResultAggregationType(AggregationTypeStrict.Count);
+					_collector.SetResultAggregationType(AggregationTypeStrict.Count);
 					break;
 
 				// Take()
@@ -69,7 +84,7 @@ namespace Creatio.Linq.QueryGeneration
 
 					if (takeExpr.NodeType == ExpressionType.Constant)
 					{
-						_aggregator.Take = (int)((ConstantExpression)takeExpr).Value;
+						_collector.Take = (int)((ConstantExpression)takeExpr).Value;
 					}
 					else
 					{
@@ -84,7 +99,7 @@ namespace Creatio.Linq.QueryGeneration
 
 					if (skipExpr.NodeType == ExpressionType.Constant)
 					{
-						_aggregator.Skip = (int)((ConstantExpression)skipExpr).Value;
+						_collector.Skip = (int)((ConstantExpression)skipExpr).Value;
 					}
 					else
 					{
@@ -132,9 +147,10 @@ namespace Creatio.Linq.QueryGeneration
 			}
 		}
 
+		/// <inheritdoc />
 		public override void VisitMainFromClause(MainFromClause fromClause, QueryModel queryModel)
 		{
-			Trace.WriteLine($"VisitMainFromClause: {fromClause}");
+			LogWriter.WriteLine($"VisitMainFromClause: {fromClause}");
 
 			base.VisitMainFromClause(fromClause, queryModel);
 
@@ -144,13 +160,14 @@ namespace Creatio.Linq.QueryGeneration
 				return;
 			}
 
-			Trace.WriteLine($"Visiting SubQueryExpression: {subQueryExpression}");
+			LogWriter.WriteLine($"Visiting SubQueryExpression: {subQueryExpression}");
 			VisitQueryModel(subQueryExpression.QueryModel);
 		}
 
+		/// <inheritdoc />
 		public override void VisitSelectClause(SelectClause selectClause, QueryModel queryModel)
 		{
-			Trace.WriteLine($"VisitSelectClause: {selectClause}");
+			LogWriter.WriteLine($"VisitSelectClause: {selectClause}");
 
 			using (_state.PushCollectorMode(QueryCollectionState.Select))
 			{
@@ -161,9 +178,10 @@ namespace Creatio.Linq.QueryGeneration
 			}
 		}
 
+		/// <inheritdoc />
 		public override void VisitWhereClause(WhereClause whereClause, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitWhereClause: {whereClause}");
+			LogWriter.WriteLine($"VisitWhereClause: {whereClause}");
 
 			using (_state.PushCollectorMode(QueryCollectionState.Where))
 			{
@@ -176,9 +194,10 @@ namespace Creatio.Linq.QueryGeneration
 			}
 		}
 
+		/// <inheritdoc />
 		public override void VisitOrderByClause(OrderByClause orderByClause, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitOrderByClause: {orderByClause}");
+			LogWriter.WriteLine($"VisitOrderByClause: {orderByClause}");
 
 			using (_state.PushCollectorMode(QueryCollectionState.OrderBy))
 			{
@@ -196,25 +215,30 @@ namespace Creatio.Linq.QueryGeneration
 			
 		}
 
+		/// <inheritdoc />
 		public override void VisitJoinClause(JoinClause joinClause, QueryModel queryModel, int index)
 		{
 			throw new InvalidOperationException($"EntitySchemaQuery LINQ provider does not support join operator. Use ESQ column path expressions instead.");
 		}
 
+		/// <inheritdoc />
 		public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitAdditionalFromClause {fromClause}");
+			LogWriter.WriteLine($"VisitAdditionalFromClause {fromClause}");
 			
 			base.VisitAdditionalFromClause(fromClause, queryModel, index);
 		}
 
+		/// <inheritdoc />
 		public override void VisitGroupJoinClause(GroupJoinClause groupJoinClause, QueryModel queryModel, int index)
 		{
-			Trace.WriteLine($"VisitGroupJoinClause: {groupJoinClause}");
+			LogWriter.WriteLine($"VisitGroupJoinClause: {groupJoinClause}");
 			throw new NotSupportedException("VisitGroupJoinClause");
 		}
 
-
+		/// <summary>
+		/// Drills into query expression tree for further details, see <see cref="EntitySchemaQueryExpressionTreeVisitor"/>.
+		/// </summary>
 		private void UpdateEntitySchemaQueryExpression(Expression expression)
 		{
 			EntitySchemaQueryExpressionTreeVisitor.SetupQueryParts(expression, _state);

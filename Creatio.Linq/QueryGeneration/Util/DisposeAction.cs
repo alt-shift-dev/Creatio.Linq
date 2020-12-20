@@ -1,15 +1,15 @@
 ﻿using System;
 
-namespace Creatio.Linq.QueryGeneration.Data
+namespace Creatio.Linq.QueryGeneration.Util
 {
 	/// <summary>
 	/// Restores query mode by invoking configured dispose action.
 	/// </summary>
-	public class QueryModeRestorer: IDisposable
+	public class DisposeAction: IDisposable
 	{
 		private Action _disposeAction;
 
-		public QueryModeRestorer(Action disposeAction)
+		public DisposeAction(Action disposeAction)
 		{
 			_disposeAction = disposeAction ?? throw new ArgumentNullException(nameof(disposeAction));
 		}

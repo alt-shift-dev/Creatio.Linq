@@ -19,7 +19,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldSelectAllColumnsWithoutProjection()
 		{
 			var account = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.First(item => 
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<Guid>("Type.Id") == Consts.Account.Type.Customer
@@ -43,7 +43,7 @@ namespace Creatio.Linq.Tests
 			// anonymous class for result collection
 			
 			var account = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item =>
 					item.Column<string>("Notes") == "$UnitTest$"
 					&& item.Column<Guid>("Type.Id") == Consts.Account.Type.Customer
@@ -74,7 +74,7 @@ namespace Creatio.Linq.Tests
 			// less flexible because only projected columns can be used for filtering
 
 			var account = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Select(item => new
 				{
 					Notes = item.Column<string>("Notes"),
@@ -100,7 +100,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldAddLinkedEntityFields()
 		{
 			var account = UserConnection
-				.QuerySchema("Account")
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.Select(item => new
 				{

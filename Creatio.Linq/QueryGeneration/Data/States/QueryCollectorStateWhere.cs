@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
+using Creatio.Linq.QueryGeneration.Util;
 using Terrasoft.Common;
 using Terrasoft.Core.Entities;
 
@@ -24,7 +25,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public QueryCollectorStateWhere(QueryPartCollector aggregator) : base(aggregator)
 		{
-			Trace.WriteLine("Entering Where state.");
+			LogWriter.WriteLine("Entering Where state.");
 			_currentFilter = aggregator.Filters;
 		}
 
@@ -80,7 +81,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public override void Dispose()
 		{
-			Trace.WriteLine("Disposing Where state.");
+			LogWriter.WriteLine("Disposing Where state.");
 		}
 	}
 }

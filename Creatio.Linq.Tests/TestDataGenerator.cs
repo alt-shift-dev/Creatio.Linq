@@ -19,6 +19,7 @@ namespace Creatio.Linq.Tests
 					TypeId = Consts.Account.Type.Customer,
 					AccountCategoryId = Consts.Account.Category.A,
 					CountryId = Consts.Country.Russia,
+					// this column will be used to distinguish items generated for unit test
 					Notes = "$UnitTest$"
 				});
 
@@ -73,7 +74,8 @@ namespace Creatio.Linq.Tests
 				StatusId = Consts.Activity.Status.NotStarted,
 				StartDate = DateTime.Today,
 				DueDate = DateTime.Today + TimeSpan.FromDays(1),
-				DetailedResult = "$UnitTest$",
+				// this column will be used to distinguish items generated for unit test
+				DetailedResult = "$UnitTest$",	
 			});
 
 			// duration: 2 days, start today

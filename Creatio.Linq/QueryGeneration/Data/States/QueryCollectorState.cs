@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
+using Creatio.Linq.QueryGeneration.Util;
 using Terrasoft.Common;
 using Terrasoft.Core.Entities;
 using Terrasoft.Core.Process.Tracing;
@@ -25,69 +26,69 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		public QueryCollectorState(QueryPartCollector aggregator)
 		{
 			_aggregator = aggregator ?? throw new ArgumentNullException(nameof(aggregator));
-			SetAggregationMode(QueryCollectionState.Aggregate);
+			SetCollectorMode(QueryCollectionState.Aggregate);
 		}
 
 		public void SetComparison(FilterComparisonType comparison, object value)
 		{
-			Trace.WriteLine($"* SetComparison: {comparison} {value}");
+			LogWriter.WriteLine($"* SetComparison: {comparison} {value}");
 			_currentState.SetComparison(comparison, value);
 		}
 
 		public void SetFunction(string methodName, object arg)
 		{
-			Trace.WriteLine($"* SetFunction: {methodName} {arg}");
+			LogWriter.WriteLine($"* SetFunction: {methodName} {arg}");
 			_currentState.SetFunction(methodName, arg);
 		}
 
 		public void SetColumn(string columnPath)
 		{
-			Trace.WriteLine($"* SetColumn: {columnPath}");
+			LogWriter.WriteLine($"* SetColumn: {columnPath}");
 			_currentState.SetColumn(columnPath);
 		}
 
 		public void SetSortOrder(bool descending)
 		{
-			Trace.WriteLine($"* SetOrder: descending: {descending}");
+			LogWriter.WriteLine($"* SetOrder: descending: {descending}");
 			_currentState.SetSortOrder(descending);
 		}
 
 		public void SetNegative()
 		{
-			Trace.WriteLine($"* SetNegative");
+			LogWriter.WriteLine($"* SetNegative");
 			_currentState.SetNegative();
 		}
 
 		public void SetColumnAlias(int position, string alias)
 		{
-			Trace.WriteLine($"* SetColumnAlias: {alias} ({position})");
+			LogWriter.WriteLine($"* SetColumnAlias: {alias} ({position})");
 			_currentState.SetColumnAlias(position, alias);
 		}
 
 		public IDisposable PushFilter(LogicalOperationStrict? operation)
 		{
-			Trace.WriteLine($"-> PushFilter: {operation}");
+			LogWriter.WriteLine($"-> PushFilter: {operation}");
 			_currentState.PushFilter(operation);
-			return new QueryModeRestorer(PopFilter);
+			return new DisposeAction(PopFilter);
 		}
 
 		public void PopFilter()
 		{
-			Trace.WriteLine("<- PopFilter");
+			LogWriter.WriteLine("<- PopFilter");
 			_currentState.PopFilter();
 		}
 
 		public IDisposable PushColumn()
 		{
-			Trace.WriteLine("-> PushColumn");
+			LogWriter.WriteLine("-> PushColumn");
 			_currentState.PushColumn();
 
-			return new QueryModeRestorer(PopColumn);
+			return new DisposeAction(PopColumn);
 		}
 
 		public void PopColumn()
 		{
-			Trace.WriteLine("<- PopColumn");
+			LogWriter.WriteLine("<- PopColumn");
 			_currentState.PopColumn();
 		}
 
@@ -100,7 +101,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		/// Sets aggregation mode.
 		/// </summary>
 		/// <param name="mode">New aggregation mode.</param>
-		public void SetAggregationMode(QueryCollectionState mode)
+		public void SetCollectorMode(QueryCollectionState mode)
 		{
 			_states.Push(_currentState);
 
@@ -136,11 +137,11 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		/// </summary>
 		public IDisposable PushCollectorMode(QueryCollectionState mode)
 		{
-			Trace.WriteLine($"-> PushCollectorMode: {mode}");
+			LogWriter.WriteLine($"-> PushCollectorMode: {mode}");
 
-			SetAggregationMode(mode);
+			SetCollectorMode(mode);
 
-			return new QueryModeRestorer(PopCollectorMode);
+			return new DisposeAction(PopCollectorMode);
 		}
 
 		/// <summary>
@@ -148,7 +149,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		/// </summary>
 		public void PopCollectorMode()
 		{
-			Trace.WriteLine($"<- PopCollectorMode");
+			LogWriter.WriteLine($"<- PopCollectorMode");
 
 			if (null == _currentState)
 			{

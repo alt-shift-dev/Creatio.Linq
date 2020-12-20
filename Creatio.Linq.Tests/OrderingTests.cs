@@ -18,7 +18,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldPerformSimpleOrdering()
 		{
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.OrderBy(item => item.Column<DateTime>("StartDate"))
 				.Select(item => new
@@ -42,7 +42,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldPerformDescendingOrdering()
 		{
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.OrderByDescending(item => item.Column<DateTime>("StartDate"))
 				.Select(item => new
@@ -66,7 +66,7 @@ namespace Creatio.Linq.Tests
 		public void ShouldPerformComplexOrdering()
 		{
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.OrderBy(item => item.Column<DateTime>("StartDate"))
 				.ThenBy(item => item.Column<int>("DurationInMinutes"))
@@ -97,7 +97,7 @@ namespace Creatio.Linq.Tests
 			// same as one of the previous one, but .OrderBy() is performed after .Select()
 			// and uses column alias.
 			var activities = UserConnection
-				.QuerySchema("Activity")
+				.QuerySchema("Activity", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("DetailedResult") == "$UnitTest$")
 				.Select(item => new
 				{

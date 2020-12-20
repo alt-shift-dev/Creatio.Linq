@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
+using Creatio.Linq.QueryGeneration.Util;
 using Terrasoft.Common;
 using Terrasoft.Core.Entities;
 
@@ -16,7 +17,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public QueryCollectorStateGroupBy(QueryPartCollector aggregator) : base(aggregator)
 		{
-			Trace.WriteLine("Entering GroupBy state.");
+			LogWriter.WriteLine("Entering GroupBy state.");
 		}
 
 		public override void SetColumn(string columnPath)
@@ -49,7 +50,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 		{
 			_columns.ForEach(Aggregator.AddGroup);
 
-			Trace.WriteLine("Disposing GroupBy state.");
+			LogWriter.WriteLine("Disposing GroupBy state.");
 		}
 	}
 }

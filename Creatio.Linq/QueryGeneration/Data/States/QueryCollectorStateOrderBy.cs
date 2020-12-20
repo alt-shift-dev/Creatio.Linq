@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Creatio.Linq.QueryGeneration.Data.Fragments;
+using Creatio.Linq.QueryGeneration.Util;
 
 namespace Creatio.Linq.QueryGeneration.Data.States
 {
@@ -13,7 +14,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public QueryCollectorStateOrderBy(QueryPartCollector aggregator) : base(aggregator)
 		{
-			Trace.WriteLine("Entering OrderBy state.");
+			LogWriter.WriteLine("Entering OrderBy state.");
 		}
 
 		public override void SetSortOrder(bool descending)
@@ -38,7 +39,7 @@ namespace Creatio.Linq.QueryGeneration.Data.States
 
 		public override void Dispose()
 		{
-			Trace.WriteLine("Disposing OrderBy state.");
+			LogWriter.WriteLine("Disposing OrderBy state.");
 			base.Dispose();
 		}
 	}

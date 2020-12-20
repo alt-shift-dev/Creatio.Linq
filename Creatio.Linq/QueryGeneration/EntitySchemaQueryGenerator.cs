@@ -193,7 +193,6 @@ namespace Creatio.Linq.QueryGeneration
 		/// <summary>
 		/// Attempts to merge group columns with select/order columns, returns group columns which were not used in select.
 		/// </summary>
-		/// <returns></returns>
 		private IEnumerable<QueryGroupColumnData> MergeAndGetOrphanGroupColumns()
 		{
 			if (_queryParts.Groups.Count == 1)
@@ -368,6 +367,11 @@ namespace Creatio.Linq.QueryGeneration
 
 		private void LogAggregatedQueryParts(QueryPartCollector aggregator)
 		{
+			if (!LogState.Options.LogAggregatedParts)
+			{
+				return;
+			}
+			
 			var serialized = JsonConvert.SerializeObject(
 				aggregator,
 				Formatting.Indented,
@@ -380,7 +384,7 @@ namespace Creatio.Linq.QueryGeneration
 				}
 			);
 
-			Trace.WriteLine($"Aggregated query:\r\n{serialized}\r\n");
+			LogWriter.WriteLine($"Aggregated query:\r\n{serialized}\r\n");
 		}
 	}
 }

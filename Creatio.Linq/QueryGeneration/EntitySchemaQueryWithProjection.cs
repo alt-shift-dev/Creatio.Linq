@@ -13,22 +13,27 @@ namespace Creatio.Linq.QueryGeneration
 	{
 		private Func<Entity, object> _resultProjector;
 
+		/// <inheritdoc />
 		public EntitySchemaQueryWithProjection()
 		{
 		}
 
+		/// <inheritdoc />
 		public EntitySchemaQueryWithProjection(EntitySchema rootSchema) : base(rootSchema)
 		{
 		}
 
+		/// <inheritdoc />
 		public EntitySchemaQueryWithProjection(EntitySchema rootSchema, CancellationToken cancellationToken) : base(rootSchema, cancellationToken)
 		{
 		}
 
+		/// <inheritdoc />
 		public EntitySchemaQueryWithProjection(EntitySchemaManager entitySchemaManager, string sourceSchemaName) : base(entitySchemaManager, sourceSchemaName)
 		{
 		}
 
+		/// <inheritdoc />
 		public EntitySchemaQueryWithProjection(EntitySchemaQuery source) : base(source)
 		{
 		}

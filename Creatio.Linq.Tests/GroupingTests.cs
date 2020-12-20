@@ -21,7 +21,8 @@ namespace Creatio.Linq.Tests
 		[TestMethod]
 		public void ShouldGroupBySingleField()
 		{
-			var accountGroups = UserConnection.QuerySchema("Account")
+			var accountGroups = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.GroupBy(item => item.Column<Guid>("AccountCategory"))
 				.Select(group => new
@@ -39,7 +40,8 @@ namespace Creatio.Linq.Tests
 		[TestMethod]
 		public void ShouldGroupBySingleColumnInAnonymousClass()
 		{
-			var accountGroups = UserConnection.QuerySchema("Account")
+			var accountGroups = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.GroupBy(item => new { AccountCategoryId = item.Column<Guid>("AccountCategory")})
 				.Select(group => new
@@ -57,7 +59,8 @@ namespace Creatio.Linq.Tests
 		[TestMethod]
 		public void ShouldGroupByMultipleColumnsInAnonymousClass()
 		{
-			var accountGroups = UserConnection.QuerySchema("Account")
+			var accountGroups = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.GroupBy(item => new
 				{
@@ -81,7 +84,8 @@ namespace Creatio.Linq.Tests
 		[TestMethod]
 		public void ShouldGroupByMultipleColumnsInObjectArray()
 		{
-			var accountGroups = UserConnection.QuerySchema("Account")
+			var accountGroups = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.GroupBy(item => new object[]
 				{
@@ -105,7 +109,8 @@ namespace Creatio.Linq.Tests
 		[TestMethod]
 		public void ShouldAggregateMultipleColumns()
 		{
-			var accountGroups = UserConnection.QuerySchema("Account")
+			var accountGroups = UserConnection
+				.QuerySchema("Account", LogOptions.ToTracePerformanceOnly)
 				.Where(item => item.Column<string>("Notes") == "$UnitTest$")
 				.GroupBy(item => item.Column<Guid>("AccountCategory.Id"))
 				.Select(group => new
