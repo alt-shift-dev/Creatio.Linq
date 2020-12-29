@@ -230,7 +230,7 @@ UserConnecttion
 ```
 
 А еще можно использовать Where несколько раз подряд, такие условия комбинируются с операцией И:
-```
+```csharp
 UserConnecttion
     .QuerySchema("Actvity")
     .Where(item => item.Column<DateTime>("StartDate") > DateTime.Now)
@@ -292,7 +292,7 @@ var oldestActivityDate = UserConnection
 Поле группировки добавляется в методе GroupBy, доступ к нему в блоке Select через свойство Key:
 ```csharp
 var contactsByAccounts = UserConnection
-	.QuerySchema("Contact", LogOptions.ToTrace)
+	.QuerySchema("Contact")
 	.GroupBy(item => item.Column<Guid>("Account"))
 	.Select(group => new
 	{
@@ -415,7 +415,7 @@ UserConnection
 var logBuilder = new StringBuilder();
 
 UserConnection
-    .QuerySchema("Contact", LogOptions.ToAnywhere(message => sb.AppendLine(message)))
+    .QuerySchema("Contact", LogOptions.ToAnywhere(message => logBuilder.AppendLine(message)))
     .ToArray();
 
 // теперь в logBuilder'е много интересного
