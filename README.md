@@ -1,11 +1,15 @@
 ﻿# Creatio.Linq
 
+[>> English version <<](README.en.md)
+
 Проект добавляет немного Linq в ваш ESQ.  
 Для разбора дерева выражений Linq используется библиотека [re-linq](https://github.com/re-motion/Relinq).
 
 ## Поддержка Creatio
-Проверялось на версии 7.15.2, с более свежими проблем быть не должно.  
+Проверялось на версии Terrasoft Creatio 7.15.2, с более свежими проблем быть не должно.  
 А вот под более древние версии придется собирать самостоятельно.
+
+Библиотека собрана под .NET Standard, так что проблем с работой в Creatio под .NET Core быть не должно.
 
 ## Установка
 Тут два варианта:  
@@ -222,7 +226,7 @@ UserConnection
 Можно пользоваться стандартными логическими операторами и скобками для расставления приоритетов:
 
 ```csharp
-UserConnecttion
+UserConnection
     .QuerySchema("Contact")
     .Where(item => item.Column<bool>("[SysAdminUnit:Contact:Id].Active") 
         && (item.Column<Guid>("Account") == null || item.Column<string>("Email").EndsWith("@company.com")))
@@ -231,7 +235,7 @@ UserConnecttion
 
 А еще можно использовать Where несколько раз подряд, такие условия комбинируются с операцией И:
 ```csharp
-UserConnecttion
+UserConnection
     .QuerySchema("Actvity")
     .Where(item => item.Column<DateTime>("StartDate") > DateTime.Now)
     .Where(item => item.Column<DateTime>("StartDate") < DateTime.Now + TimeSpan.FromDays(5)) 
