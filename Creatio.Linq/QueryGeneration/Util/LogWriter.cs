@@ -12,7 +12,7 @@ namespace Creatio.Linq.QueryGeneration.Util
 		private static Action<string> _messageWriter;
 		
 		[ThreadStatic]
-		private static int _indentLevel = 0;
+		private static int _indentLevel;
 		
 		/// <summary>
 		/// Enables forwarding log messages from <see cref="WriteLine"/> to <see cref="messageWriter"/>.
@@ -20,6 +20,7 @@ namespace Creatio.Linq.QueryGeneration.Util
 		public static void BeginScope(Action<string> messageWriter)
 		{
 			_messageWriter = messageWriter;
+			_indentLevel = 0;
 		}
 
 		/// <summary>

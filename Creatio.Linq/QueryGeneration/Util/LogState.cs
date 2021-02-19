@@ -113,24 +113,21 @@ namespace Creatio.Linq.QueryGeneration.Util
 		
 		private static void OnOperationFinished()
 		{
-			if (null != _stopwatch)
-			{
-				_stopwatch.Stop();
-			}
-			
+			_stopwatch?.Stop();
+
 			switch (_operation)
 			{
 				case QueryProcessOperation.LinqParse:
 					if (_options.LogLinqVisitorTime)
 					{
-						PrintResult($"*** LINQ parsing time: {_stopwatch.ElapsedMilliseconds} ms.");
+						PrintResult($"*** LINQ parsing time: {_stopwatch?.ElapsedMilliseconds} ms.");
 					}
 					return;
 				
 				case QueryProcessOperation.EsqGeneration:
 					if (_options.LogQueryGenerationTime)
 					{
-						PrintResult($"*** ESQ generation time: {_stopwatch.ElapsedMilliseconds} ms.");
+						PrintResult($"*** ESQ generation time: {_stopwatch?.ElapsedMilliseconds} ms.");
 					}
 
 					return;
@@ -138,7 +135,7 @@ namespace Creatio.Linq.QueryGeneration.Util
 				case QueryProcessOperation.Executing:
 					if (_options.LogQueryExecutionTime)
 					{
-						PrintResult($"*** Query execution time: {_stopwatch.ElapsedMilliseconds} ms.");
+						PrintResult($"*** Query execution time: {_stopwatch?.ElapsedMilliseconds} ms.");
 					}
 					
 					return;
